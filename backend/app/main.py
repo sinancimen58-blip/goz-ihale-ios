@@ -101,3 +101,13 @@ def scan_catalog():
         message="Source disabled; no request made." if not source.enabled else "Enabled but no verified adapter is registered."
         result.append(record_run(source,status,message,0))
     return {"live_collection":False,"message":"Catalog audit only; websites were not contacted.","runs":result}
+
+from .collector.runner import run_source
+
+@app.post("/api/run-source/{source_key}", tags=["collection"])
+def run_one_source(source_key: str):
+    """Run a registered adapter if enabled and available; otherwise safely log readiness."""
+    result=run_source(source_key)
+    if result.get("status")=="unknown_source":
+        raise HTTPException(404,"Unknown source key")
+    return result
