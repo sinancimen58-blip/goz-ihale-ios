@@ -46,3 +46,9 @@ def test_create_and_duplicate_notice():
     assert created.json()["id"] == payload["id"]
     duplicate = client.post("/api/tenders", json=payload, headers={"X-Goz-Ihale-Token": "test-write-token"})
     assert duplicate.status_code == 409
+
+
+def test_write_endpoint_requires_token():
+    payload = {"id":"test-auth-1","title":"Test","institution":"Test","city":"Sivas","category":"OCT","deadline":None,"source_name":"Test","source_url":None,"summary":None,"status":"new"}
+    response = client.post("/api/tenders", json=payload)
+    assert response.status_code == 401
