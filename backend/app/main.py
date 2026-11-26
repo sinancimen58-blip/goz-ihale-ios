@@ -172,9 +172,12 @@ def priority_notices(limit: int = 50):
     return today_rows
 
 
-from .collector.legal_analysis import analyze_procurement_rules\nfrom .collector.term_extraction import extract_terms
+from .collector.legal_analysis import analyze_procurement_rules
+from .collector.term_extraction import extract_terms
 
 @app.get("/api/legal-analyze", tags=["intelligence"])
 def legal_analyze_notice(text: str):
     """Provide a cautious, informational procurement-method and challenge-route analysis."""
-    result=analyze_procurement_rules(text)\n    result["extracted_terms"]=extract_terms(text)\n    return result
+    result=analyze_procurement_rules(text)
+    result["extracted_terms"]=extract_terms(text)
+    return result
