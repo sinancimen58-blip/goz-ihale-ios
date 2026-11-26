@@ -136,7 +136,6 @@ struct ContentView: View {
 
 
     private func infoBadge(_ title: String, _ value: String, icon: String) -> some View { VStack(alignment: .leading, spacing: 4) { Label(title, systemImage: icon).font(.caption.bold()).foregroundStyle(.secondary); Text(value).font(.caption).lineLimit(3) }.frame(maxWidth: .infinity, alignment: .leading).padding(8).background(.thinMaterial).clipShape(RoundedRectangle(cornerRadius: 10)) }
-    private func infoBadge(_ title: String, _ value: String, icon: String) -> some View { VStack(alignment: .leading, spacing: 4) { Label(title, systemImage: icon).font(.caption.bold()).foregroundStyle(.secondary); Text(value).font(.caption).lineLimit(3) }.frame(maxWidth: .infinity, alignment: .leading).padding(8).background(.thinMaterial).clipShape(RoundedRectangle(cornerRadius: 10)) }
 
     private func metricCard(title: String, value: String, symbol: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
