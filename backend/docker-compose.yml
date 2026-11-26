@@ -1,0 +1,15 @@
+services:
+  gozihale-api:
+    build: .
+    container_name: gozihale-api
+    restart: unless-stopped
+    ports:
+      - "${GOZ_IHALE_PORT:-8000}:8000"
+    environment:
+      GOZ_IHALE_DB: /data/gozihale.db
+      GOZ_IHALE_INGEST_DB: /data/ingestion.db
+      GOZ_IHALE_SCAN_DB: /data/scan_runs.db
+    volumes:
+      - gozihale_data:/data
+volumes:
+  gozihale_data:
