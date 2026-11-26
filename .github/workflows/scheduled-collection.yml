@@ -8,22 +8,28 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      GOZ_IHALE_ENABLED_SOURCE_KEYS: ${{ secrets.GOZ_IHALE_ENABLED_SOURCE_KEYS }}
+      GOZ_IHALE_FEED_EKAP: ${{ secrets.GOZ_IHALE_FEED_EKAP }}
+      GOZ_IHALE_FEED_DMO: ${{ secrets.GOZ_IHALE_FEED_DMO }}
+      GOZ_IHALE_FEED_ILAN: ${{ secrets.GOZ_IHALE_FEED_ILAN }}
+      GOZ_IHALE_FEED_RESIMIGAZETE: ${{ secrets.GOZ_IHALE_FEED_RESIMIGAZETE }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - run: pip install -r backend/requirements.txt
-      - name: Run only enabled, configured public feeds
+      - name: Run configured public feed adapters
         working-directory: backend
         run: |
           python - <<'PY'
           from app.collector.runner import run_enabled_sources
-          from app.collector.registry import list_sources
-          active = [s.key for s in list_sources() if s.enabled]
-          print("Enabled sources:", active)
+          from app.collector.runner import enabled_keys
+          keys = enabled_keys()
+          print("Explicitly enabled source keys:", sorted(keys))
           results = run_enabled_sources()
           print("Run results:", results)
-          if not active:
-              print("No source is enabled; no network collection was attempted.")
+          if not keys:
+              print("No source enabled. Collection did not contact sources.")
           PY
