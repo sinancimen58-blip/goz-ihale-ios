@@ -1,0 +1,29 @@
+name: Scheduled source collection
+on:
+  schedule:
+    - cron: "0 6,14 * * 1-5"
+  workflow_dispatch:
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r backend/requirements.txt
+      - name: Run only enabled, configured public feeds
+        working-directory: backend
+        run: |
+          python - <<'PY'
+          from app.collector.runner import run_enabled_sources
+          from app.collector.registry import list_sources
+          active = [s.key for s in list_sources() if s.enabled]
+          print("Enabled sources:", active)
+          results = run_enabled_sources()
+          print("Run results:", results)
+          if not active:
+              print("No source is enabled; no network collection was attempted.")
+          PY
