@@ -1,0 +1,20 @@
+# Gözİhale deployment readiness
+
+## Current state
+- API and iOS prototype are in the repository.
+- SQLite persistence, ingestion event log, source catalog, scan ledger, relevance scoring, deadline parsing and urgency labels exist.
+- The scheduled GitHub Actions workflow is a framework only: it runs configured adapters. No source is enabled and no feed URL is confirmed, so it does not currently retrieve real procurement notices.
+- iOS is not yet built or tested in Xcode or on a physical device.
+
+## Before public deployment
+1. Configure verified official feeds/API endpoints, one source at a time.
+2. Enable each source only after its access method and terms are reviewed.
+3. Replace wildcard CORS with an explicit deployment origin policy (or remove CORS for a native-only API).
+4. Add authentication and rate limiting to write/collection endpoints.
+5. Use HTTPS and a protected secret store for any feed configuration.
+6. Persist the SQLite database on a durable volume and back it up.
+7. Run CI tests and record results.
+8. Configure an actual iOS API base URL and test on device.
+
+## Deadline priority
+The priority-notices endpoint adds `days_remaining` and `urgency` fields to each notice, where the urgency labels are Turkish-language triage labels. These are informational; always confirm deadlines against the original official notice and its addenda.
