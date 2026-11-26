@@ -1,4 +1,4 @@
-"""Controlled source runner. Only explicitly configured feed adapters run."""
+"""Controlled source runner. Explicit source allowlist and verified feed URLs required."""
 import os
 from .registry import list_sources
 from .scan_ledger import record_run
@@ -6,29 +6,35 @@ from .filtering import screen_many
 from .sqlite_repository import ingest
 from .rss_adapter import RSSFeedAdapter
 
+def enabled_keys():
+    raw=os.getenv("GOZ_IHALE_ENABLED_SOURCE_KEYS","")
+    return {key.strip() for key in raw.split(",") if key.strip()}
+
 def configured_adapters():
     adapters={}
+    enabled=enabled_keys()
     for source in list_sources():
+        if source.key not in enabled:
+            continue
         env_key="GOZ_IHALE_FEED_"+source.key.upper().replace("-","_")
         feed_url=os.getenv(env_key)
-        if feed_url and source.enabled:
+        if feed_url:
             try:
                 adapters[source.key]=RSSFeedAdapter(source.name,feed_url)
             except ValueError:
                 continue
     return adapters
 
-ADAPTERS = configured_adapters()
-
 def run_source(source_key: str):
     sources={s.key:s for s in list_sources()}
     source=sources.get(source_key)
     if source is None:
         return {"source_key":source_key,"status":"unknown_source","notices_saved":0}
-    adapter=ADAPTERS.get(source_key)
-    if not source.enabled or adapter is None:
-        status="disabled" if not source.enabled else "adapter_missing"
-        message="Source disabled." if not source.enabled else "No configured adapter; no request was made."
+    enabled=enabled_keys()
+    adapter=configured_adapters().get(source_key)
+    if source_key not in enabled or adapter is None:
+        status="disabled" if source_key not in enabled else "adapter_missing_or_invalid"
+        message="Source not explicitly enabled." if source_key not in enabled else "Enabled but feed URL missing or invalid; no request made."
         return record_run(source,status,message,0)
     try:
         candidates=adapter.collect()
@@ -43,4 +49,5 @@ def run_source(source_key: str):
         return record_run(source,"error",f"{type(exc).__name__}: {str(exc)[:300]}",0)
 
 def run_enabled_sources():
-    return [run_source(s.key) for s in list_sources() if s.enabled and s.key in ADAPTERS]
+    enabled=enabled_keys()
+    return [run_source(s.key) for s in list_sources() if s.key in enabled]
