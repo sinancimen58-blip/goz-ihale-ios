@@ -1,5 +1,1 @@
-# Gözİhale Backend
-
-Planned Python FastAPI backend and PostgreSQL persistence.
-
-Initial development structure will evolve with the API and ingestion implementation.
+# Gözİhale Backend\n\nFastAPI backend prototype with SQLite persistence for local development.\n\n## Run locally\n\n1. Install Python 3.10+\n2. From the backend folder: `pip install -r requirements.txt`\n3. Run: `uvicorn app.main:app --reload`\n4. Open `http://127.0.0.1:8000/docs` for interactive API documentation.\n\nSQLite database is created automatically at startup (or use `GOZ_IHALE_DB` to specify a file path). Demo records are explicitly labeled. Live procurement source collection is not connected yet.\n
