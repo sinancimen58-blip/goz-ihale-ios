@@ -1,5 +1,5 @@
 """RSS/Atom adapter with conservative URL validation for public feeds."""
-from urllib.request import Request, urlopen
+from urllib.request import Request, urlopen, build_opener, HTTPRedirectHandler
 from urllib.parse import urlparse
 from xml.etree import ElementTree as ET
 import socket, ipaddress
@@ -22,6 +22,10 @@ def _validate_feed_url(url: str):
         if not ip.is_global:
             raise ValueError("Feed host resolves to a non-public address.")
     return url
+
+class _NoRedirect(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        raise ValueError("Feed redirects are not allowed; configure the final URL directly.")
 
 def parse_feed(xml_bytes: bytes, source_name: str, source_url: str):
     root=ET.fromstring(xml_bytes)
@@ -53,6 +57,6 @@ class RSSFeedAdapter(SourceAdapter):
         # so the destination is checked before the initial request.
         _validate_feed_url(self.feed_url)
         request=Request(self.feed_url,headers={"User-Agent":"GozIhale/0.1 (public feed reader)"})
-        with urlopen(request,timeout=10) as response:
+        with build_opener(_NoRedirect()).open(request,timeout=10) as response:
             data=response.read(2_000_000)
         return parse_feed(data,self.source_name,self.feed_url)
