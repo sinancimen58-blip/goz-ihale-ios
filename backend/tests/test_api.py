@@ -2,7 +2,8 @@
 import os
 import tempfile
 
-# Set DB before importing application module.
+# Set DB and write token before importing application module.
+os.environ["GOZ_IHALE_API_WRITE_TOKEN"] = "test-write-token"
 _tmp = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
 os.environ["GOZ_IHALE_DB"] = _tmp.name
 
@@ -40,8 +41,8 @@ def test_create_and_duplicate_notice():
         "city": "Sivas", "category": "OCT", "deadline": "2026-12-31",
         "source_name": "Test", "source_url": None, "summary": "Test kaydı", "status": "new"
     }
-    created = client.post("/api/tenders", json=payload)
+    created = client.post("/api/tenders", json=payload, headers={"X-Goz-Ihale-Token": "test-write-token"})
     assert created.status_code == 200
     assert created.json()["id"] == payload["id"]
-    duplicate = client.post("/api/tenders", json=payload)
+    duplicate = client.post("/api/tenders", json=payload, headers={"X-Goz-Ihale-Token": "test-write-token"})
     assert duplicate.status_code == 409
