@@ -170,3 +170,11 @@ def priority_notices(limit: int = 50):
         enriched["urgency"]=urgency_label(enriched.get("deadline"))
         today_rows.append(enriched)
     return today_rows
+
+
+from .collector.legal_analysis import analyze_procurement_rules
+
+@app.get("/api/legal-analyze", tags=["intelligence"])
+def legal_analyze_notice(text: str):
+    """Provide a cautious, informational procurement-method and challenge-route analysis."""
+    return analyze_procurement_rules(text)
