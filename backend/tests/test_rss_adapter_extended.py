@@ -1,6 +1,6 @@
 from app.collector.rss_adapter import parse_feed
 
-ATOM_LINKS = b"""<feed xmlns="http://www.w3.org/2005/Atom"><entry><title>Optik biyometri alımı</title><link rel="alternate" href="https://example.org/item/3"/><summary>İhale</summary></entry></feed>"""
+ATOM_LINKS = """<feed xmlns="http://www.w3.org/2005/Atom"><entry><title>Optik biyometri alımı</title><link rel="alternate" href="https://example.org/item/3"/><summary>İhale</summary></entry></feed>""".encode("utf-8")
 
 def test_atom_alternate_link():
     items = parse_feed(ATOM_LINKS, "Feed", "https://example.org/feed")
