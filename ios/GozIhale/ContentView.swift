@@ -128,6 +128,10 @@ struct ContentView: View {
                     Section("Durum") {
                         Text("API prototipine bağlanabilir. Sunucunun internet üzerinden erişilebilir olması gerekir.")
                     }
+                    Section("Prototip oturumu") {
+                        Button("Demo oturumundan çıkış yap", role: .destructive) { UserDefaults.standard.set(false, forKey: "gozihale_demo_session") }
+                        Text("Demo oturumu gerçek kullanıcı doğrulaması değildir.").font(.footnote).foregroundStyle(.secondary)
+                    }
                 }.navigationTitle("Ayarlar")
             }.tabItem { Label("Ayarlar", systemImage: "gearshape") }.tag(3)
         }
