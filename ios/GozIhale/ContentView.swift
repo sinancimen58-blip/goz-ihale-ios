@@ -11,6 +11,8 @@ struct Tender: Identifiable, Codable {
     let source_url: String?
     let summary: String?
     let status: String
+    let days_remaining: Int?
+    let urgency: String?
 }
 
 @MainActor
@@ -28,7 +30,7 @@ final class TenderViewModel: ObservableObject {
         loading = true; errorMessage = nil
         defer { loading = false }
         do {
-            var url = base; url.append(path: "api/tenders")
+            var url = base; url.append(path: "api/priority-notices")
             let (data, response) = try await URLSession.shared.data(from: url)
             guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.badServerResponse) }
             tenders = try JSONDecoder().decode([Tender].self, from: data)
@@ -146,6 +148,7 @@ struct ContentView: View {
             }
             Button { selectedTender = tender } label: { VStack(alignment: .leading, spacing: 4) { Text(tender.title).font(.headline).foregroundStyle(.primary); Text(tender.institution).font(.subheadline).foregroundStyle(.primary) }.frame(maxWidth: .infinity, alignment: .leading) }.buttonStyle(.plain)
             Text("\(tender.city ?? "Şehir belirtilmemiş") • \(tender.deadline ?? "Son tarih belirtilmemiş")").font(.caption).foregroundStyle(.secondary)
+            if let urgency = tender.urgency { Label(urgency, systemImage: "clock").font(.caption.bold()).foregroundStyle(urgency.contains("Kritik") || urgency.contains("Acil") || urgency == "Bugün" ? .orange : .secondary) }
             if let summary = tender.summary, !summary.isEmpty { Text(summary).font(.footnote).lineLimit(3) }
             if let source = tender.source_url, let url = URL(string: source) {
                 Link("İlan kaynağı", destination: url).font(.footnote)
