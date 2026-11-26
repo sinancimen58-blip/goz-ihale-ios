@@ -139,3 +139,15 @@ def source_search_plan():
     """Return source/keyword matrix for manual or future automated searches."""
     plan=build_source_query_plan()
     return {'count':len(plan),'plans':plan,'live_search':False}
+
+@app.get("/api/priority-notices", tags=["collection"])
+def priority_notices(limit: int = 50):
+    """Convenience shortlist ordered by relevance and deadline presence."""
+    rows=list_collected_notices(limit)
+    rows.sort(key=lambda row: (
+        -int(row.get("relevance_score") or 0),
+        row.get("deadline") is None,
+        row.get("deadline") or "9999-12-31",
+        row.get("last_seen") or ""
+    ))
+    return rows[:max(1,min(limit,200))]
