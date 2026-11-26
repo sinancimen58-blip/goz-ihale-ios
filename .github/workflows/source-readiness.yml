@@ -1,0 +1,26 @@
+name: Scheduled source readiness scan
+on:
+  schedule:
+    - cron: "15 6,14 * * 1-5"
+  workflow_dispatch:
+jobs:
+  catalog-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install -r backend/requirements.txt
+      - name: Audit configured source catalog (no live fetch)
+        run: |
+          cd backend
+          python - <<'PY'
+          from app.collector.registry import list_sources
+          print("Source catalog entries:", len(list_sources()))
+          for s in list_sources():
+              print(s.key, "enabled=", s.enabled, "official=", s.official)
+          PY
