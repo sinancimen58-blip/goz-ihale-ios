@@ -181,3 +181,11 @@ def legal_analyze_notice(text: str):
     result=analyze_procurement_rules(text)
     result["extracted_terms"]=extract_terms(text)
     return result
+
+
+from .collector.specification_review import analyze_specification
+
+@app.get("/api/specification-review", tags=["intelligence"])
+def specification_review(text: str):
+    """Heuristic review flags for human assessment of specification text."""
+    return analyze_specification(text)
