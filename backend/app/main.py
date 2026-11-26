@@ -87,7 +87,7 @@ from .collector.scan_ledger import record_run, list_runs as list_scan_runs
 @app.get("/api/sources", tags=["collection"])
 def sources():
     """Configured source catalog; entries are not active scrapers."""
-    return [{"key":s.key,"name":s.name,"group":s.source_group,"url":s.url,"official":s.official,"enabled":s.enabled,"notes":s.notes} for s in list_sources()]
+    return [{"key":s.key,"name":s.name,"group":s.source_group,"url":s.url,"official":s.official,"enabled":s.key in enabled_keys(),"notes":s.notes} for s in list_sources()]
 
 @app.get("/api/scan-runs", tags=["collection"])
 def scan_runs(limit: int = 100):
@@ -98,12 +98,12 @@ def scan_catalog():
     """Audit catalog entries and record adapter readiness; deliberately does not fetch sites."""
     result=[]
     for source in list_sources():
-        status="disabled" if not source.enabled else "not_implemented"
-        message="Source disabled; no request made." if not source.enabled else "Enabled but no verified adapter is registered."
+        status="disabled" if source.key not in enabled_keys() else "configured_check"
+        message="Source not enabled; no request made." if source.key not in enabled_keys() else "Enabled source; adapter readiness checked separately."
         result.append(record_run(source,status,message,0))
     return {"live_collection":False,"message":"Catalog audit only; websites were not contacted.","runs":result}
 
-from .collector.runner import run_source
+from .collector.runner import run_source, enabled_keys
 
 @app.post("/api/run-source/{source_key}", tags=["collection"])
 def run_one_source(source_key: str):
