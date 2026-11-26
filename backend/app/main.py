@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from .schemas import Tender
 from .collector.scoring import relevance_score
@@ -10,6 +10,13 @@ from pathlib import Path
 app = FastAPI(title="GozIhale API", version="0.2.0", description="Ophthalmology procurement intelligence API")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 DB_PATH=os.getenv("GOZ_IHALE_DB", str(Path(__file__).resolve().parent.parent / "gozihale.db"))
+
+WRITE_TOKEN=os.getenv("GOZ_IHALE_API_WRITE_TOKEN")
+def require_write_token(provided: str|None):
+    if not WRITE_TOKEN:
+        raise HTTPException(503, "Write endpoints disabled: configure GOZ_IHALE_API_WRITE_TOKEN.")
+    if not provided or provided != WRITE_TOKEN:
+        raise HTTPException(401, "Invalid or missing write token.")
 
 SAMPLE_TENDERS = [
     {"id":"demo-001","title":"OCT cihazı alımı (örnek)","institution":"Demo Üniversite Hastanesi","city":"Ankara","category":"OCT","deadline":None,"source_name":"Demo","source_url":None,"summary":"Demo kayıt; gerçek ilan değildir.","status":"demo"},
@@ -51,7 +58,8 @@ def get_tender(tender_id: str):
     return dict(row)
 
 @app.post("/api/tenders", response_model=Tender, tags=["tenders"])
-def add_tender(tender: Tender):
+def add_tender(tender: Tender, x_goz_ihale_token: str|None=Header(default=None)):
+    require_write_token(x_goz_ihale_token)
     with connect() as c:
         try: c.execute("INSERT INTO tenders VALUES (?,?,?,?,?,?,?,?,?,?)",tuple(tender.model_dump().values()))
         except sqlite3.IntegrityError: raise HTTPException(409,"Tender ID already exists")
@@ -75,7 +83,8 @@ def collection_events(limit: int = 100):
     return list_ingestion_events(limit)
 
 @app.post("/api/collect/record", tags=["collection"])
-def record_collected_notice(payload: dict):
+def record_collected_notice(payload: dict, x_goz_ihale_token: str|None=Header(default=None)):
+    require_write_token(x_goz_ihale_token)
     """Persist an already collected/enriched candidate. This does not fetch websites."""
     if not payload.get("title") or not payload.get("institution") or not payload.get("source_name"):
         raise HTTPException(400, "title, institution and source_name are required")
@@ -94,7 +103,8 @@ def scan_runs(limit: int = 100):
     return list_scan_runs(limit)
 
 @app.post("/api/scan-catalog", tags=["collection"])
-def scan_catalog():
+def scan_catalog(x_goz_ihale_token: str|None=Header(default=None)):
+    require_write_token(x_goz_ihale_token)
     """Audit catalog entries and record adapter readiness; deliberately does not fetch sites."""
     result=[]
     for source in list_sources():
@@ -106,7 +116,8 @@ def scan_catalog():
 from .collector.runner import run_source, enabled_keys
 
 @app.post("/api/run-source/{source_key}", tags=["collection"])
-def run_one_source(source_key: str):
+def run_one_source(source_key: str, x_goz_ihale_token: str|None=Header(default=None)):
+    require_write_token(x_goz_ihale_token)
     """Run a registered adapter if enabled and available; otherwise safely log readiness."""
     result=run_source(source_key)
     if result.get("status")=="unknown_source":
