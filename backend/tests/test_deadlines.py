@@ -9,7 +9,7 @@ def test_urgency_windows():
     assert days_remaining("2027-02-01",today)==0
     assert urgency_label("2027-02-01",today)=="Bugün"
     assert urgency_label("2027-02-04",today)=="Kritik: 3 gün"
-    assert urgency_label("2027-02-10",today)=="Acil: 7 gün"
+    assert urgency_label("2027-02-08",today)=="Acil: 7 gün"
     assert urgency_label("2027-02-20",today)=="Normal"
 
 def test_invalid_and_past_dates():
