@@ -8,7 +8,7 @@ import sqlite3, os
 from pathlib import Path
 
 app = FastAPI(title="GozIhale API", version="0.2.0", description="Ophthalmology procurement intelligence API")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+CORS_ORIGINS=[origin.strip() for origin in os.getenv("GOZ_IHALE_CORS_ORIGINS", "http://localhost:8000,http://127.0.0.1:8000").split(",") if origin.strip()]\napp.add_middleware(CORSMiddleware, allow_origins=CORS_ORIGINS, allow_methods=["GET","POST"], allow_headers=["Content-Type","X-Goz-Ihale-Token"])
 DB_PATH=os.getenv("GOZ_IHALE_DB", str(Path(__file__).resolve().parent.parent / "gozihale.db"))
 
 WRITE_TOKEN=os.getenv("GOZ_IHALE_API_WRITE_TOKEN")
