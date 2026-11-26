@@ -12,7 +12,9 @@ struct Tender: Identifiable, Codable {
     let summary: String?
     let status: String
     let days_remaining: Int?
-    let urgency: String?\n    let procurement_method: String?\n    let payment_terms: String?
+    let urgency: String?
+    let procurement_method: String?
+    let payment_terms: String?
 }
 
 @MainActor
@@ -132,7 +134,11 @@ struct ContentView: View {
         .sheet(item: $selectedTender) { tender in TenderDetailView(tender: tender) }
     }
 
-\n    private func infoBadge(_ title: String, _ value: String, icon: String) -> some View { VStack(alignment: .leading, spacing: 4) { Label(title, systemImage: icon).font(.caption.bold()).foregroundStyle(.secondary); Text(value).font(.caption).lineLimit(3) }.frame(maxWidth: .infinity, alignment: .leading).padding(8).background(.thinMaterial).clipShape(RoundedRectangle(cornerRadius: 10)) }\n    private func infoBadge(_ title: String, _ value: String, icon: String) -> some View { VStack(alignment: .leading, spacing: 4) { Label(title, systemImage: icon).font(.caption.bold()).foregroundStyle(.secondary); Text(value).font(.caption).lineLimit(3) }.frame(maxWidth: .infinity, alignment: .leading).padding(8).background(.thinMaterial).clipShape(RoundedRectangle(cornerRadius: 10)) }\n\n    private func metricCard(title: String, value: String, symbol: String) -> some View {
+
+    private func infoBadge(_ title: String, _ value: String, icon: String) -> some View { VStack(alignment: .leading, spacing: 4) { Label(title, systemImage: icon).font(.caption.bold()).foregroundStyle(.secondary); Text(value).font(.caption).lineLimit(3) }.frame(maxWidth: .infinity, alignment: .leading).padding(8).background(.thinMaterial).clipShape(RoundedRectangle(cornerRadius: 10)) }
+    private func infoBadge(_ title: String, _ value: String, icon: String) -> some View { VStack(alignment: .leading, spacing: 4) { Label(title, systemImage: icon).font(.caption.bold()).foregroundStyle(.secondary); Text(value).font(.caption).lineLimit(3) }.frame(maxWidth: .infinity, alignment: .leading).padding(8).background(.thinMaterial).clipShape(RoundedRectangle(cornerRadius: 10)) }
+
+    private func metricCard(title: String, value: String, symbol: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Image(systemName: symbol).font(.title2)
             Text(value).font(.title.bold())
@@ -153,7 +159,8 @@ struct ContentView: View {
             }
             Button { selectedTender = tender } label: { VStack(alignment: .leading, spacing: 4) { Text(tender.title).font(.headline).foregroundStyle(.primary); Text(tender.institution).font(.subheadline).foregroundStyle(.primary) }.frame(maxWidth: .infinity, alignment: .leading) }.buttonStyle(.plain)
             Text("\(tender.city ?? "Şehir belirtilmemiş") • \(tender.deadline ?? "Son tarih belirtilmemiş")").font(.caption).foregroundStyle(.secondary)
-            if let urgency = tender.urgency { Label(urgency, systemImage: "clock").font(.caption.bold()).foregroundStyle(urgency.contains("Kritik") || urgency.contains("Acil") || urgency == "Bugün" ? .orange : .secondary) }\n            HStack(alignment: .top, spacing: 8) { infoBadge("İhale yöntemi", tender.procurement_method ?? "Belirtilmemiş", icon: "scale"); infoBadge("Ödeme süresi", tender.payment_terms ?? "Belirtilmemiş", icon: "creditcard") }
+            if let urgency = tender.urgency { Label(urgency, systemImage: "clock").font(.caption.bold()).foregroundStyle(urgency.contains("Kritik") || urgency.contains("Acil") || urgency == "Bugün" ? .orange : .secondary) }
+            HStack(alignment: .top, spacing: 8) { infoBadge("İhale yöntemi", tender.procurement_method ?? "Belirtilmemiş", icon: "scale"); infoBadge("Ödeme süresi", tender.payment_terms ?? "Belirtilmemiş", icon: "creditcard") }
             if let summary = tender.summary, !summary.isEmpty { Text(summary).font(.footnote).lineLimit(3) }
             if let source = tender.source_url, let url = URL(string: source) {
                 Link("İlan kaynağı", destination: url).font(.footnote)
