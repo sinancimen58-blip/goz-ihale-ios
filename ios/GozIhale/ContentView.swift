@@ -19,6 +19,7 @@ final class TenderViewModel: ObservableObject {
     @Published var loading = false
     @Published var errorMessage: String?
     @Published var serverURL: String = UserDefaults.standard.string(forKey: "gozihale_server") ?? "http://127.0.0.1:8000"
+    @Published var favorites: Set<String> = Set(UserDefaults.standard.stringArray(forKey: "gozihale_favorites") ?? [])
 
     func load() async {
         guard let base = URL(string: serverURL.trimmingCharacters(in: .whitespacesAndNewlines)) else {
@@ -27,8 +28,7 @@ final class TenderViewModel: ObservableObject {
         loading = true; errorMessage = nil
         defer { loading = false }
         do {
-            var url = base
-            url.append(path: "api/tenders")
+            var url = base; url.append(path: "api/tenders")
             let (data, response) = try await URLSession.shared.data(from: url)
             guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.badServerResponse) }
             tenders = try JSONDecoder().decode([Tender].self, from: data)
@@ -36,9 +36,10 @@ final class TenderViewModel: ObservableObject {
             errorMessage = "Sunucuya bağlanılamadı. Adresi ve sunucunun çalıştığını kontrol edin."
         }
     }
-
-    func saveServer() {
-        UserDefaults.standard.set(serverURL, forKey: "gozihale_server")
+    func saveServer() { UserDefaults.standard.set(serverURL, forKey: "gozihale_server") }
+    func toggleFavorite(_ id: String) {
+        if favorites.contains(id) { favorites.remove(id) } else { favorites.insert(id) }
+        UserDefaults.standard.set(Array(favorites), forKey: "gozihale_favorites")
     }
 }
 
@@ -48,8 +49,9 @@ struct ContentView: View {
     @State private var selectedTab = 0
 
     private var filtered: [Tender] {
-        guard !searchText.isEmpty else { return model.tenders }
-        return model.tenders.filter {
+        let base = selectedTab == 2 ? model.tenders.filter { model.favorites.contains($0.id) } : model.tenders
+        guard !searchText.isEmpty else { return base }
+        return base.filter {
             $0.title.localizedCaseInsensitiveContains(searchText) ||
             $0.institution.localizedCaseInsensitiveContains(searchText) ||
             $0.category.localizedCaseInsensitiveContains(searchText) ||
@@ -67,9 +69,9 @@ struct ContentView: View {
                             Text("Türkiye göz sağlığı satın alma fırsatları").foregroundStyle(.secondary)
                         }
                         HStack(spacing: 12) {
-                            metricCard(title: "İlan", value: "(model.tenders.count)", symbol: "doc.text")
-                            metricCard(title: "Kategori", value: "(Set(model.tenders.map{$0.category}).count)", symbol: "square.grid.2x2")
-                            metricCard(title: "Durum", value: model.errorMessage == nil ? "Bağlı" : "Çevrimdışı", symbol: "antenna.radiowaves.left.and.right")
+                            metricCard(title: "İlan", value: "\(model.tenders.count)", symbol: "doc.text")
+                            metricCard(title: "Kategori", value: "\(Set(model.tenders.map{$0.category}).count)", symbol: "square.grid.2x2")
+                            metricCard(title: "Takip", value: "\(model.favorites.count)", symbol: "bookmark")
                         }
                         if let message = model.errorMessage {
                             Label(message, systemImage: "wifi.exclamationmark").font(.footnote).foregroundStyle(.orange)
@@ -95,8 +97,13 @@ struct ContentView: View {
             }.tabItem { Label("Kategoriler", systemImage: "square.grid.2x2") }.tag(1)
 
             NavigationStack {
-                ContentUnavailableView("Takip Listem", systemImage: "bookmark", description: Text("Favori ilan özelliği sonraki aşamada eklenecek."))
-                    .navigationTitle("Takip")
+                List {
+                    if filtered.isEmpty {
+                        ContentUnavailableView("Takip listesi boş", systemImage: "bookmark", description: Text("İlan kartındaki yer imi simgesine dokunarak takip ekleyin."))
+                    } else {
+                        ForEach(filtered) { tender in tenderCard(tender) }
+                    }
+                }.navigationTitle("Takip Listem")
             }.tabItem { Label("Takip", systemImage: "bookmark") }.tag(2)
 
             NavigationStack {
@@ -109,7 +116,7 @@ struct ContentView: View {
                         Button("Bağlantıyı test et") { Task { await model.load() } }
                     }
                     Section("Durum") {
-                        Text("Bu uygulama şu anda API prototipine bağlanabilir. Sunucunun internet üzerinden erişilebilir olması gerekir.")
+                        Text("API prototipine bağlanabilir. Sunucunun internet üzerinden erişilebilir olması gerekir.")
                     }
                 }.navigationTitle("Ayarlar")
             }.tabItem { Label("Ayarlar", systemImage: "gearshape") }.tag(3)
@@ -129,7 +136,11 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(tender.category).font(.caption.bold()).padding(6).background(.blue.opacity(0.12)).clipShape(Capsule())
-                Spacer(); Text(tender.status).font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Button { model.toggleFavorite(tender.id) } label: {
+                    Image(systemName: model.favorites.contains(tender.id) ? "bookmark.fill" : "bookmark")
+                }.buttonStyle(.plain).accessibilityLabel("Takip durumunu değiştir")
+                Text(tender.status).font(.caption).foregroundStyle(.secondary)
             }
             Text(tender.title).font(.headline)
             Text(tender.institution).font(.subheadline)
