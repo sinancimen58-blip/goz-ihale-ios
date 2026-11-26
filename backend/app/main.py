@@ -79,3 +79,25 @@ def record_collected_notice(payload: dict):
     if not payload.get("title") or not payload.get("institution") or not payload.get("source_name"):
         raise HTTPException(400, "title, institution and source_name are required")
     return ingest_collected_notice(payload)
+
+from .collector.registry import list_sources
+from .collector.scan_ledger import record_run, list_runs as list_scan_runs
+
+@app.get("/api/sources", tags=["collection"])
+def sources():
+    """Configured source catalog; entries are not active scrapers."""
+    return [{"key":s.key,"name":s.name,"group":s.source_group,"url":s.url,"official":s.official,"enabled":s.enabled,"notes":s.notes} for s in list_sources()]
+
+@app.get("/api/scan-runs", tags=["collection"])
+def scan_runs(limit: int = 100):
+    return list_scan_runs(limit)
+
+@app.post("/api/scan-catalog", tags=["collection"])
+def scan_catalog():
+    """Audit catalog entries and record adapter readiness; deliberately does not fetch sites."""
+    result=[]
+    for source in list_sources():
+        status="disabled" if not source.enabled else "not_implemented"
+        message="Source disabled; no request made." if not source.enabled else "Enabled but no verified adapter is registered."
+        result.append(record_run(source,status,message,0))
+    return {"live_collection":False,"message":"Catalog audit only; websites were not contacted.","runs":result}
