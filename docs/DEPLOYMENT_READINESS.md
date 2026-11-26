@@ -10,7 +10,7 @@
 1. Configure verified official feeds/API endpoints, one source at a time.
 2. Enable each source only after its access method and terms are reviewed.
 3. Replace wildcard CORS with an explicit deployment origin policy (or remove CORS for a native-only API).
-4. Add authentication and rate limiting to write/collection endpoints.
+4. Set `GOZ_IHALE_API_WRITE_TOKEN` to a long random secret; POST write/collection endpoints require it in the `X-Goz-Ihale-Token` header. Without the environment token, those endpoints return 503. Add rate limiting as a separate deployment control.
 5. Use HTTPS and a protected secret store for any feed configuration.
 6. Persist the SQLite database on a durable volume and back it up.
 7. Run CI tests and record results.
@@ -18,3 +18,10 @@
 
 ## Deadline priority
 The priority-notices endpoint adds `days_remaining` and `urgency` fields to each notice, where the urgency labels are Turkish-language triage labels. These are informational; always confirm deadlines against the original official notice and its addenda.
+
+
+## Write endpoint protection (implemented)
+- `POST /api/tenders`, `POST /api/collect/record`, `POST /api/scan-catalog`, and `POST /api/run-source/{source_key}` require `X-Goz-Ihale-Token` matching the `GOZ_IHALE_API_WRITE_TOKEN` environment variable.
+- If the variable is absent, these endpoints fail closed with HTTP 503; incorrect or missing request token returns HTTP 401.
+- Store the token only in the hosting provider's secret settings. Do not commit it to GitHub or the app source.
+- This is a basic shared-secret gate, not a substitute for HTTPS, rate limiting, origin restrictions, or a stronger identity system.
