@@ -1,0 +1,14 @@
+"""Source-specific ophthalmology notice discovery query plan."""
+from .keywords import KEYWORDS
+
+TERMS=[
+"OCT", "OCT-A", "optik koherens tomografi", "fako", "fakoemülsifikasyon",
+"fako cihazı", "fako sarf", "optik biyometri", "biyometri", "kornea topografisi",
+"topografi", "YAG lazer", "SLT lazer", "fundus kamera", "oftalmik mikroskop",
+"yarık lamba", "slit lamp", "tonometre", "görme alanı", "perimetre",
+"refraktometre", "keratometre", "lensmetre", "mikroperimetri", "aberometre",
+"oftalmik muayene ünitesi", "göz cihazı", "oftalmoloji", "oftalmik sarf",
+"göz cerrahisi sarf", "göz hastalıkları cihaz"
+]
+def build_source_query_plan():
+    return [{"term":term,"source_targets":["EKAP","ilan.gov.tr","DMO","Resmî Gazete","KİK"],"verification":"original_notice_required"} for term in TERMS]
