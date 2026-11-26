@@ -130,3 +130,12 @@ def municipal_search_plan(municipality: str | None = None):
     if municipality and not plans:
         raise HTTPException(404, "Metropolitan municipality not found")
     return {"count": len(plans), "plans": plans}
+
+
+from .collector.source_search_plan import build_source_query_plan
+
+@app.get('/api/source-search-plan', tags=['collection'])
+def source_search_plan():
+    """Return source/keyword matrix for manual or future automated searches."""
+    plan=build_source_query_plan()
+    return {'count':len(plan),'plans':plan,'live_search':False}
