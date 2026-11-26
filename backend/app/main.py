@@ -119,3 +119,14 @@ from .collector.municipal_targets import TARGETS as MUNICIPAL_TARGETS, MUNICIPAL
 def municipal_targets():
     """Return all metropolitan municipality targets for health-related procurement discovery."""
     return {"count": len(MUNICIPAL_TARGETS), "search_terms": MUNICIPAL_HEALTH_SEARCH_TERMS, "targets": MUNICIPAL_TARGETS}
+
+
+from .collector.municipal_search_plan import build_search_plan
+
+@app.get("/api/municipal-search-plan", tags=["collection"])
+def municipal_search_plan(municipality: str | None = None):
+    """Generate official-source discovery query plans; does not perform live searches."""
+    plans = build_search_plan(municipality)
+    if municipality and not plans:
+        raise HTTPException(404, "Metropolitan municipality not found")
+    return {"count": len(plans), "plans": plans}
