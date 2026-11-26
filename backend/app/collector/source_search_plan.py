@@ -1,5 +1,5 @@
 """Source-specific ophthalmology notice discovery query plan."""
-from .keywords import KEYWORDS
+from .keywords import ALL_KEYWORDS
 
 TERMS=[
 "OCT", "OCT-A", "optik koherens tomografi", "fako", "fakoemülsifikasyon",
