@@ -23,7 +23,11 @@ def initialize():
             status TEXT NOT NULL DEFAULT 'new', relevance_score INTEGER DEFAULT 0,
             payload_json TEXT NOT NULL, first_seen TEXT DEFAULT CURRENT_TIMESTAMP,
             last_seen TEXT DEFAULT CURRENT_TIMESTAMP)""")
-        existing={row[1] for row in db.execute("PRAGMA table_info(collected_notices)").fetchall()}\n        for field in ("procurement_method", "payment_terms"):\n            if field not in existing:\n                db.execute(f"ALTER TABLE collected_notices ADD COLUMN {field} TEXT")\n        db.execute("""CREATE TABLE IF NOT EXISTS collected_notice_events (
+        existing={row[1] for row in db.execute("PRAGMA table_info(collected_notices)").fetchall()}
+        for field in ("procurement_method", "payment_terms"):
+            if field not in existing:
+                db.execute(f"ALTER TABLE collected_notices ADD COLUMN {field} TEXT")
+        db.execute("""CREATE TABLE IF NOT EXISTS collected_notice_events (
             id INTEGER PRIMARY KEY AUTOINCREMENT, fingerprint TEXT NOT NULL,
             event_type TEXT NOT NULL, changed_fields TEXT, payload_json TEXT,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP)""")
@@ -43,8 +47,8 @@ def ingest(record: dict[str, Any]) -> dict[str, Any]:
         columns=("notice_id","title","institution","city","publication_date","deadline","category","quantity","specification","estimated_price","document_url","source_name","source_url","summary","procurement_method","payment_terms","status","relevance_score")
         values=[record.get(c) for c in columns]
         if old is None:
-            db.execute("""INSERT INTO collected_notices (fingerprint,notice_id,title,institution,city,publication_date,deadline,category,quantity,specification,estimated_price,document_url,source_name,source_url,summary,status,relevance_score,payload_json)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",[fingerprint,*values,payload])
+            db.execute("""INSERT INTO collected_notices (fingerprint,notice_id,title,institution,city,publication_date,deadline,category,quantity,specification,estimated_price,document_url,source_name,source_url,summary,procurement_method,payment_terms,status,relevance_score,payload_json)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",[fingerprint,*values,payload])
         else:
             db.execute("""UPDATE collected_notices SET notice_id=?,title=?,institution=?,city=?,publication_date=?,deadline=?,category=?,quantity=?,specification=?,estimated_price=?,document_url=?,source_name=?,source_url=?,summary=?,procurement_method=?,payment_terms=?,status=?,relevance_score=?,payload_json=?,last_seen=CURRENT_TIMESTAMP WHERE fingerprint=?""",[*values,payload,fingerprint])
         if action != "unchanged":
