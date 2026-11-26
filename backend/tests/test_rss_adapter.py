@@ -1,7 +1,7 @@
 from app.collector.rss_adapter import parse_feed, _validate_feed_url
 
 RSS="""<rss version="2.0"><channel><item><title>OCT cihazı</title><link>https://example.org/notice/1</link><description>Hastane alımı</description></item></channel></rss>""".encode("utf-8")
-ATOM=b"""<feed xmlns="http://www.w3.org/2005/Atom"><entry><title>Tonometre alımı</title><link href="https://example.org/notice/2"/><summary>Medikal</summary></entry></feed>"""
+ATOM="""<feed xmlns="http://www.w3.org/2005/Atom"><entry><title>Tonometre alımı</title><link href="https://example.org/notice/2"/><summary>Medikal</summary></entry></feed>""".encode("utf-8")
 
 def test_rss_parse():
     notices=parse_feed(RSS,"Test Feed","https://example.org/rss")
