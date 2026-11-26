@@ -132,7 +132,7 @@ struct ContentView: View {
         .sheet(item: $selectedTender) { tender in TenderDetailView(tender: tender) }
     }
 
-    private func metricCard(title: String, value: String, symbol: String) -> some View {
+\n    private func infoBadge(_ title: String, _ value: String, icon: String) -> some View { VStack(alignment: .leading, spacing: 4) { Label(title, systemImage: icon).font(.caption.bold()).foregroundStyle(.secondary); Text(value).font(.caption).lineLimit(3) }.frame(maxWidth: .infinity, alignment: .leading).padding(8).background(.thinMaterial).clipShape(RoundedRectangle(cornerRadius: 10)) }\n    private func metricCard(title: String, value: String, symbol: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Image(systemName: symbol).font(.title2)
             Text(value).font(.title.bold())
@@ -170,7 +170,7 @@ struct TenderDetailView: View {
   NavigationStack { ScrollView { VStack(alignment: .leading, spacing: 14) {
    Text(tender.category).font(.caption.bold()).padding(7).background(.blue.opacity(0.12)).clipShape(Capsule())
    Text(tender.title).font(.title2.bold())
-   row("Kurum", tender.institution); row("Şehir", tender.city ?? "Belirtilmemiş"); row("Son tarih", tender.deadline ?? "Belirtilmemiş"); row("Kaynak", tender.source_name); row("Durum", tender.status)
+   row("Kurum", tender.institution); row("Şehir", tender.city ?? "Belirtilmemiş"); row("Son tarih", tender.deadline ?? "Belirtilmemiş"); row("İhale yöntemi", tender.procurement_method ?? "İlan metninde tespit edilemedi"); row("Ödeme süresi", tender.payment_terms ?? "İlan metninde tespit edilemedi"); row("Kaynak", tender.source_name); row("Durum", tender.status)
    if let summary=tender.summary, !summary.isEmpty { Text("İlan özeti").font(.headline); Text(summary) }
    if let s=tender.source_url, let u=URL(string:s) { Link(destination:u) { Label("Kaynak sayfasını aç",systemImage:"arrow.up.right.square").frame(maxWidth:.infinity).padding().background(.blue.opacity(0.12)).clipShape(RoundedRectangle(cornerRadius:12)) } }
   }.padding() }.navigationTitle("İlan Detayı").navigationBarTitleDisplayMode(.inline) }
