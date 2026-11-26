@@ -27,3 +27,13 @@ def test_extracts_method_and_payment_with_evidence():
     assert result["payment_terms"] is not None
     assert "90 gün" in result["payment_terms"]["evidence"]
     assert result["payment_terms"]["confidence"] < 1
+
+
+def test_specification_review_flags_brand_and_equivalence():
+    from app.collector.specification_review import analyze_specification
+    result=analyze_specification("ZEISS model ve eşdeğer ürün; kurulum ve servis şartı")
+    keys={flag["key"] for flag in result["flags"]}
+    assert "brand_model" in keys
+    assert "equivalence" in keys
+    assert "delivery_service" in keys
+    assert result["disclaimer"]
