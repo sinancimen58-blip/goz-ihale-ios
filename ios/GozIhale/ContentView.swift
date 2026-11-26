@@ -49,12 +49,14 @@ struct ContentView: View {
     @StateObject private var model = TenderViewModel()
     @State private var searchText = ""
     @State private var selectedTab = 0
+    @State private var selectedCategory: String? = nil
     @State private var selectedTender: Tender?
 
     private var filtered: [Tender] {
         let base = selectedTab == 2 ? model.tenders.filter { model.favorites.contains($0.id) } : model.tenders
-        guard !searchText.isEmpty else { return base }
-        return base.filter {
+        let categoryFiltered = selectedCategory == nil ? base : base.filter { $0.category == selectedCategory }
+        guard !searchText.isEmpty else { return categoryFiltered }
+        return categoryFiltered.filter {
             $0.title.localizedCaseInsensitiveContains(searchText) ||
             $0.institution.localizedCaseInsensitiveContains(searchText) ||
             $0.category.localizedCaseInsensitiveContains(searchText) ||
@@ -94,8 +96,11 @@ struct ContentView: View {
             }.tabItem { Label("Ana Sayfa", systemImage: "house") }.tag(0)
 
             NavigationStack {
-                List(Array(Set(model.tenders.map{$0.category})).sorted(), id: \.self) { category in
-                    Label(category, systemImage: "eye").badge(model.tenders.filter{$0.category == category}.count)
+                List {
+                    Button("Tüm kategoriler") { selectedCategory = nil; selectedTab = 0 }
+                    ForEach(Array(Set(model.tenders.map{$0.category})).sorted(), id: \.self) { category in
+                        Button { selectedCategory = category; selectedTab = 0 } label: { Label(category, systemImage: "eye").badge(model.tenders.filter{$0.category == category}.count) }
+                    }
                 }.navigationTitle("Kategoriler")
             }.tabItem { Label("Kategoriler", systemImage: "square.grid.2x2") }.tag(1)
 
