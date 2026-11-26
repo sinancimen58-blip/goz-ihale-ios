@@ -47,6 +47,7 @@ struct ContentView: View {
     @StateObject private var model = TenderViewModel()
     @State private var searchText = ""
     @State private var selectedTab = 0
+    @State private var selectedTender: Tender?
 
     private var filtered: [Tender] {
         let base = selectedTab == 2 ? model.tenders.filter { model.favorites.contains($0.id) } : model.tenders
@@ -121,6 +122,7 @@ struct ContentView: View {
                 }.navigationTitle("Ayarlar")
             }.tabItem { Label("Ayarlar", systemImage: "gearshape") }.tag(3)
         }
+        .sheet(item: $selectedTender) { tender in TenderDetailView(tender: tender) }
     }
 
     private func metricCard(title: String, value: String, symbol: String) -> some View {
@@ -142,8 +144,7 @@ struct ContentView: View {
                 }.buttonStyle(.plain).accessibilityLabel("Takip durumunu değiştir")
                 Text(tender.status).font(.caption).foregroundStyle(.secondary)
             }
-            Text(tender.title).font(.headline)
-            Text(tender.institution).font(.subheadline)
+            Button { selectedTender = tender } label: { VStack(alignment: .leading, spacing: 4) { Text(tender.title).font(.headline).foregroundStyle(.primary); Text(tender.institution).font(.subheadline).foregroundStyle(.primary) }.frame(maxWidth: .infinity, alignment: .leading) }.buttonStyle(.plain)
             Text("\(tender.city ?? "Şehir belirtilmemiş") • \(tender.deadline ?? "Son tarih belirtilmemiş")").font(.caption).foregroundStyle(.secondary)
             if let summary = tender.summary, !summary.isEmpty { Text(summary).font(.footnote).lineLimit(3) }
             if let source = tender.source_url, let url = URL(string: source) {
@@ -152,4 +153,19 @@ struct ContentView: View {
         }.frame(maxWidth: .infinity, alignment: .leading).padding()
             .background(.background).overlay(RoundedRectangle(cornerRadius: 16).stroke(.quaternary)).clipShape(RoundedRectangle(cornerRadius: 16))
     }
+}
+
+
+struct TenderDetailView: View {
+ let tender: Tender
+ var body: some View {
+  NavigationStack { ScrollView { VStack(alignment: .leading, spacing: 14) {
+   Text(tender.category).font(.caption.bold()).padding(7).background(.blue.opacity(0.12)).clipShape(Capsule())
+   Text(tender.title).font(.title2.bold())
+   row("Kurum", tender.institution); row("Şehir", tender.city ?? "Belirtilmemiş"); row("Son tarih", tender.deadline ?? "Belirtilmemiş"); row("Kaynak", tender.source_name); row("Durum", tender.status)
+   if let summary=tender.summary, !summary.isEmpty { Text("İlan özeti").font(.headline); Text(summary) }
+   if let s=tender.source_url, let u=URL(string:s) { Link(destination:u) { Label("Kaynak sayfasını aç",systemImage:"arrow.up.right.square").frame(maxWidth:.infinity).padding().background(.blue.opacity(0.12)).clipShape(RoundedRectangle(cornerRadius:12)) } }
+  }.padding() }.navigationTitle("İlan Detayı").navigationBarTitleDisplayMode(.inline) }
+ }
+ private func row(_ title:String,_ value:String)->some View { VStack(alignment:.leading,spacing:3) { Text(title).font(.caption).foregroundStyle(.secondary); Text(value) }.frame(maxWidth:.infinity,alignment:.leading).padding(.vertical,3) }
 }
