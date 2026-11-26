@@ -28,8 +28,8 @@ def material_change(old: dict[str, Any], new: dict[str, Any]) -> list[str]:
     tracked = ("title", "deadline", "status", "quantity", "specification", "estimated_price", "document_url")
     changed=[]
     for field in tracked:
-        a=normalize_text(str(old.get(field, "")))
-        b=normalize_text(str(new.get(field, "")))
+        a=normalize_text(str(old.get(field) or ""))
+        b=normalize_text(str(new.get(field) or ""))
         if a != b:
             changed.append(field)
     return changed
