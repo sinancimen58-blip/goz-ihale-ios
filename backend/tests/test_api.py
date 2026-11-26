@@ -60,3 +60,9 @@ def test_legal_analysis_endpoint():
     assert response.json()["detected_methods"]
     assert response.json()["time_limits"]["exact_days"] is None
     assert "extracted_terms" in response.json()
+
+
+def test_specification_review_api():
+    response=client.get("/api/specification-review", params={"text":"ZEISS marka, eşdeğer ürün, kurulum"})
+    assert response.status_code == 200
+    assert response.json()["flag_count"] >= 2
