@@ -52,3 +52,10 @@ def test_write_endpoint_requires_token():
     payload = {"id":"test-auth-1","title":"Test","institution":"Test","city":"Sivas","category":"OCT","deadline":None,"source_name":"Test","source_url":None,"summary":None,"status":"new"}
     response = client.post("/api/tenders", json=payload)
     assert response.status_code == 401
+
+
+def test_legal_analysis_endpoint():
+    response=client.get("/api/legal-analyze", params={"text":"4734 açık ihale usulü"})
+    assert response.status_code == 200
+    assert response.json()["detected_methods"]
+    assert response.json()["time_limits"]["exact_days"] is None
