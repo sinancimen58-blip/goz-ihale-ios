@@ -10,7 +10,7 @@ from typing import Any
 def normalize_text(value: str | None) -> str:
     value = value or ""
     value = unicodedata.normalize("NFKC", value).casefold()
-    value = re.sub(r"\\s+", " ", value).strip()
+    value = re.sub(r"\s+", " ", value).strip()
     return value
 
 
