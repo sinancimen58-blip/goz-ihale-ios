@@ -18,7 +18,8 @@ def initialize():
         db.execute("""CREATE TABLE IF NOT EXISTS collected_notices (
             fingerprint TEXT PRIMARY KEY, notice_id TEXT, title TEXT NOT NULL,
             institution TEXT NOT NULL, city TEXT, publication_date TEXT, deadline TEXT,
-            category TEXT, source_name TEXT NOT NULL, source_url TEXT, summary TEXT,
+            category TEXT, quantity TEXT, specification TEXT, estimated_price TEXT, document_url TEXT,
+            source_name TEXT NOT NULL, source_url TEXT, summary TEXT,
             status TEXT NOT NULL DEFAULT 'new', relevance_score INTEGER DEFAULT 0,
             payload_json TEXT NOT NULL, first_seen TEXT DEFAULT CURRENT_TIMESTAMP,
             last_seen TEXT DEFAULT CURRENT_TIMESTAMP)""")
@@ -39,13 +40,13 @@ def ingest(record: dict[str, Any]) -> dict[str, Any]:
         else:
             changed=material_change(old,record)
             action="updated" if changed else "unchanged"
-        columns=("notice_id","title","institution","city","publication_date","deadline","category","source_name","source_url","summary","status","relevance_score")
+        columns=("notice_id","title","institution","city","publication_date","deadline","category","quantity","specification","estimated_price","document_url","source_name","source_url","summary","status","relevance_score")
         values=[record.get(c) for c in columns]
         if old is None:
-            db.execute("""INSERT INTO collected_notices (fingerprint,notice_id,title,institution,city,publication_date,deadline,category,source_name,source_url,summary,status,relevance_score,payload_json)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",[fingerprint,*values,payload])
+            db.execute("""INSERT INTO collected_notices (fingerprint,notice_id,title,institution,city,publication_date,deadline,category,quantity,specification,estimated_price,document_url,source_name,source_url,summary,status,relevance_score,payload_json)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",[fingerprint,*values,payload])
         else:
-            db.execute("""UPDATE collected_notices SET notice_id=?,title=?,institution=?,city=?,publication_date=?,deadline=?,category=?,source_name=?,source_url=?,summary=?,status=?,relevance_score=?,payload_json=?,last_seen=CURRENT_TIMESTAMP WHERE fingerprint=?""",[*values,payload,fingerprint])
+            db.execute("""UPDATE collected_notices SET notice_id=?,title=?,institution=?,city=?,publication_date=?,deadline=?,category=?,quantity=?,specification=?,estimated_price=?,document_url=?,source_name=?,source_url=?,summary=?,status=?,relevance_score=?,payload_json=?,last_seen=CURRENT_TIMESTAMP WHERE fingerprint=?""",[*values,payload,fingerprint])
         if action != "unchanged":
             db.execute("INSERT INTO collected_notice_events (fingerprint,event_type,changed_fields,payload_json) VALUES (?,?,?,?)",(fingerprint,action,json.dumps(changed,ensure_ascii=False),payload))
     alert=decide_alert(action,changed,text=str(record),score=int(record.get("relevance_score",0)))
