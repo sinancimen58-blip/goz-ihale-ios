@@ -59,3 +59,4 @@ def test_legal_analysis_endpoint():
     assert response.status_code == 200
     assert response.json()["detected_methods"]
     assert response.json()["time_limits"]["exact_days"] is None
+    assert "extracted_terms" in response.json()
