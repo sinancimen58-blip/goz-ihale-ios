@@ -1,5 +1,5 @@
 """RSS/Atom adapter with conservative URL validation for public feeds."""
-from urllib.request import Request, urlopen, build_opener, HTTPRedirectHandler
+from urllib.request import Request, build_opener, HTTPRedirectHandler
 from urllib.parse import urlparse
 from xml.etree import ElementTree as ET
 import socket, ipaddress
@@ -43,7 +43,7 @@ def parse_feed(xml_bytes: bytes, source_name: str, source_url: str):
         if not link:
             link_node=node.find("{*}link")
             if link_node is not None: link=link_node.attrib.get("href","")
-        description=text_for(node,["description","summary","content","{*}summary","{*}content"])
+        description=text_for(node,["description","summary","content","{*}summary","{*}content"])\n        if description and len(description)>12000: description=description[:12000]
         if title:
             candidates.append(NoticeCandidate(title=title,institution=source_name,source_name=source_name,source_url=link or source_url,description=description or None))
     return candidates
