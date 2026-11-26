@@ -111,3 +111,11 @@ def run_one_source(source_key: str):
     if result.get("status")=="unknown_source":
         raise HTTPException(404,"Unknown source key")
     return result
+
+
+from .collector.municipal_targets import TARGETS as MUNICIPAL_TARGETS, MUNICIPAL_HEALTH_SEARCH_TERMS
+
+@app.get("/api/municipal-targets", tags=["collection"])
+def municipal_targets():
+    """Return all metropolitan municipality targets for health-related procurement discovery."""
+    return {"count": len(MUNICIPAL_TARGETS), "search_terms": MUNICIPAL_HEALTH_SEARCH_TERMS, "targets": MUNICIPAL_TARGETS}
