@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from .schemas import Tender
 from .collector.scoring import relevance_score
+from .collector.sqlite_repository import list_notices as list_collected_notices, list_events as list_ingestion_events, ingest as ingest_collected_notice
 import sqlite3, os
 from pathlib import Path
 
@@ -60,3 +61,21 @@ def categories(): return ["OCT / OCT-A", "Fako cihazı", "Fako sarf", "Optik biy
 
 @app.get("/api/analyze", tags=["intelligence"])
 def analyze_notice(text: str): return relevance_score(text)
+
+
+@app.get("/api/collected-notices", tags=["collection"])
+def collected_notices(limit: int = 100):
+    """List notices in the separate persistent ingestion prototype."""
+    return list_collected_notices(limit)
+
+@app.get("/api/collection-events", tags=["collection"])
+def collection_events(limit: int = 100):
+    """List new/updated notice ingestion events."""
+    return list_ingestion_events(limit)
+
+@app.post("/api/collect/record", tags=["collection"])
+def record_collected_notice(payload: dict):
+    """Persist an already collected/enriched candidate. This does not fetch websites."""
+    if not payload.get("title") or not payload.get("institution") or not payload.get("source_name"):
+        raise HTTPException(400, "title, institution and source_name are required")
+    return ingest_collected_notice(payload)
