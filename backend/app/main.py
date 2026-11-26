@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .schemas import Tender
+from .collector.scoring import relevance_score
 
 app = FastAPI(title="GozIhale API", version="0.1.0", description="Ophthalmology procurement intelligence API")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -28,3 +29,8 @@ def list_tenders(q: str | None = None, category: str | None = None, city: str | 
 @app.get("/api/categories", tags=["tenders"])
 def categories():
     return ["OCT / OCT-A", "Fako cihazı", "Fako sarf", "Optik biyometri", "Topografi", "YAG / SLT", "Fundus kamera", "Göz mikroskobu", "Tonometre", "Görme alanı", "Refraktometre", "Lensmetre", "Mikroperimetri", "Diğer"]
+
+@app.get("/api/analyze", tags=["intelligence"])
+def analyze_notice(text: str):
+    """Analyze pasted notice text; does not fetch external pages."""
+    return relevance_score(text)
