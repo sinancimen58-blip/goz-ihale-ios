@@ -139,3 +139,12 @@ def test_classifier_recognizes_expanded_terms():
 
 def test_classifier_avoids_partial_word_false_positive():
     assert classify_text("tipografi kitap basımı") == []
+
+
+def test_classifier_additional_procurement_terms():
+    assert "Yarık lamba" in classify_text("Biomikroskop alımı")
+    assert "Pakimetri" in classify_text("Pakimetri cihazı")
+    assert "Pakimetri" in classify_text("Pachymetry equipment")
+    assert "IOL / Göz içi lens" in classify_text("IOL ve intraocular lens")
+    assert "Biyometri" in classify_text("Biometri cihazı")
+
