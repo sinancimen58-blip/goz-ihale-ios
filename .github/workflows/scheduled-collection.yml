@@ -29,5 +29,5 @@ jobs:
             -X POST "${BASE}/api/run-enabled-sources" \
             -H "X-Goz-Ihale-Token: ${API_TOKEN}" \
             -H "Content-Type: application/json")
-          echo "${RESULT}" | jq -e '.count > 0 and (.results | length == .count) and all(.results[]; .status == "success" or .status == "success_empty")'
+          echo "${RESULT}" | jq -e '.count > 0 and ((.results | length) == .count) and all(.results[]; .status == "success" or .status == "success_empty")'
           echo "Collection run completed; source statuses were validated."
