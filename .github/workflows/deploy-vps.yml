@@ -1,3 +1,4 @@
+
 name: Deploy VPS
 
 on:
@@ -21,38 +22,39 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
       - name: Install backend dependencies
         run: pip install -r backend/requirements.txt
+
       - name: Run backend tests
         env:
           PYTHONPATH: backend
         run: pytest -q backend/tests
+
       - name: Validate Python and shell scripts
         run: |
           set -euo pipefail
           python -m compileall -q backend/app backend/scripts
           bash -n backend/scripts/enable_live_collection.sh
+
       - name: Validate Docker Compose and build image
-      
         run: |
           set -euo pipefail
-          PORT="${DEPLOY_PORT:-22}"
-          REMOTE_COMMAND='set -euo pipefail; cd "'"${DEPLOY_PATH}"'"; git pull --ff-only origin main; cd backend; bash scripts/enable_live_collection.sh; docker compose ps; curl -fsS --retry 10 --retry-connrefused --retry-delay 2 http://127.0.0.1:8000/api/health; curl -fsS http://127.0.0.1:8000/api/scan-summary'
-          ssh -p "$PORT" -o StrictHostKeyChecking=yes -o BatchMode=yes "${DEPLOY_USER}@${DEPLOY_HOST}" "$REMOTE_COMMAND"
-          {
-            echo "### VPS deployment completed"
-            echo "SSH deployment and post-deploy API checks completed successfully."
-          } >> "$GITHUB_STEP_SUMMARY"
-
+          cd backend
+          cp .env.example .env
+          docker compose config --quiet
+          docker build -t gozihale-api:ci .
 
   deploy:
     needs: test
     if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     environment: production
+
     steps:
       - name: Check deployment secrets
         id: check
@@ -65,27 +67,49 @@ jobs:
           DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
         run: |
           set -euo pipefail
-          trim() { printf '%s' "$1" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'; }
+
+          trim() {
+            printf '%s' "$1" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
+          }
+
           HOST="$(trim "$DEPLOY_HOST")"
           USER="$(trim "$DEPLOY_USER")"
           PATH_VALUE="$(trim "$DEPLOY_PATH")"
           KEY="$(printf '%s' "$SSH_KEY" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
           KH="$(printf '%s' "$KNOWN_HOSTS" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
           PORT="$(trim "${DEPLOY_PORT:-22}")"
+
           if [[ -z "$HOST" || -z "$USER" || -z "$PATH_VALUE" || -z "$KEY" || -z "$KH" ]]; then
             echo "ready=false" >> "$GITHUB_OUTPUT"
             echo "One or more required deployment secrets are empty."
             exit 0
           fi
-          if [[ ! "$PATH_VALUE" =~ ^/[A-Za-z0-9._/-]+$ ]]; then echo "Invalid DEPLOY_PATH format."; echo "ready=false" >> "$GITHUB_OUTPUT"; exit 0; fi
-          if [[ ! "$USER" =~ ^[A-Za-z0-9._-]+$ ]]; then echo "Invalid DEPLOY_USER format."; echo "ready=false" >> "$GITHUB_OUTPUT"; exit 0; fi
-          if [[ ! "$PORT" =~ ^[0-9]+$ ]] || (( PORT < 1 || PORT > 65535 )); then echo "Invalid DEPLOY_PORT format."; echo "ready=false" >> "$GITHUB_OUTPUT"; exit 0; fi
+
+          if [[ ! "$PATH_VALUE" =~ ^/[A-Za-z0-9._/-]+$ ]]; then
+            echo "Invalid DEPLOY_PATH format."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [[ ! "$USER" =~ ^[A-Za-z0-9._-]+$ ]]; then
+            echo "Invalid DEPLOY_USER format."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [[ ! "$PORT" =~ ^[0-9]+$ ]] || (( PORT < 1 || PORT > 65535 )); then
+            echo "Invalid DEPLOY_PORT format."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           {
             echo "host=$HOST"
             echo "user=$USER"
             echo "path=$PATH_VALUE"
             echo "port=$PORT"
           } >> "$GITHUB_OUTPUT"
+
           echo "ready=true" >> "$GITHUB_OUTPUT"
 
       - name: Prepare SSH
@@ -110,9 +134,17 @@ jobs:
           DEPLOY_PORT: ${{ steps.check.outputs.port }}
         run: |
           set -euo pipefail
+
           PORT="${DEPLOY_PORT:-22}"
-          REMOTE_COMMAND="set -euo pipefail; cd ${DEPLOY_PATH}; git pull --ff-only origin main; cd backend; if [ \$(id -u) -eq 0 ]; then bash scripts/enable_live_collection.sh || scan_exit=\$?; else sudo -n bash scripts/enable_live_collection.sh || scan_exit=\$?; fi; docker compose ps; curl -fsS --retry 10 --retry-connrefused --retry-delay 2 http://127.0.0.1:8000/api/health; curl -fsS http://127.0.0.1:8000/api/scan-summary; if [ \${scan_exit:-0} -ne 0 ]; then exit \${scan_exit}; fi
-          ssh -p "$PORT" -o StrictHostKeyChecking=yes -o BatchMode=yes "${DEPLOY_USER}@${DEPLOY_HOST}" "$REMOTE_COMMAND"
+
+          REMOTE_COMMAND="set -euo pipefail; cd '${DEPLOY_PATH}'; git pull --ff-only origin main; cd backend; scan_exit=0; if [ \$(id -u) -eq 0 ]; then bash scripts/enable_live_collection.sh || scan_exit=\$?; else sudo -n bash scripts/enable_live_collection.sh || scan_exit=\$?; fi; docker compose ps; curl -fsS --retry 10 --retry-connrefused --retry-delay 2 http://127.0.0.1:8000/api/health; curl -fsS http://127.0.0.1:8000/api/scan-summary; exit \$scan_exit"
+
+          ssh -p "$PORT" \
+            -o StrictHostKeyChecking=yes \
+            -o BatchMode=yes \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "$REMOTE_COMMAND"
+
           {
             echo "### VPS deployment completed"
             echo "SSH deployment and post-deploy API checks completed successfully."
