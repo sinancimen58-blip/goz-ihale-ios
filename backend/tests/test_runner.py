@@ -16,7 +16,7 @@ def _patch_run(monkeypatch,adapter,recorded):
     monkeypatch.setenv("GOZ_IHALE_ENABLED_SOURCE_KEYS","ekap")
     monkeypatch.setattr(runner,"configured_adapters",lambda:{"ekap":adapter})
     monkeypatch.setattr(runner,"screen_many",lambda candidates: [])
-    monkeypatch.setattr(runner,"record_run",lambda source,status,message,notices_found,metrics=None:
+    monkeypatch.setattr(runner,"record_run",lambda source,status,message,notices_found,metrics=None,source_url=None:
                         recorded.update(status=status,message=message,metrics=metrics) or recorded)
     monkeypatch.setattr(runner.time,"sleep",lambda delay: None)
     monkeypatch.setattr(runner,"dispatch_pending_telegram",lambda:{"configured":False,"sent":0,"failed":0,"pending":0})
