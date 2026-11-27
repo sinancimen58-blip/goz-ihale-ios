@@ -6,9 +6,9 @@ cd "${BACKEND_DIR}"
 
 python3 -m app.collector.live_config
 docker compose up -d --build
-python3 scripts/run_live_scan.py
 
-# Install a separate, idempotent cron file only when running as root and cron is active.
+# Install the schedule before the first scan so a transient source outage does
+# not prevent future scheduled collection from being configured.
 if [[ "${EUID:-$(id -u)}" -eq 0 && -d /etc/cron.d ]]; then
   CRON_ACTIVE=0
   if command -v systemctl >/dev/null 2>&1; then
@@ -31,3 +31,5 @@ EOF
 else
   echo "Not running as root or /etc/cron.d unavailable; scan ran once only."
 fi
+
+python3 scripts/run_live_scan.py
