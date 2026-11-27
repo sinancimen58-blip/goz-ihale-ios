@@ -88,7 +88,8 @@ def ingest(record: dict[str, Any]) -> dict[str, Any]:
                     event_type="document_change"
                 elif "status" in changed:
                     event_type="status_change"
-            db.execute("INSERT INTO collected_notice_events (fingerprint,event_type,changed_fields,payload_json) VALUES (?,?,?,?)",(fingerprint,event_type,json.dumps(changed,ensure_ascii=False),payload))
+            event_payload={"new":record,"old":old or {},"changed_fields":changed}
+            db.execute("INSERT INTO collected_notice_events (fingerprint,event_type,changed_fields,payload_json) VALUES (?,?,?,?)",(fingerprint,event_type,json.dumps(changed,ensure_ascii=False),json.dumps(event_payload,ensure_ascii=False,default=str)))
     alert=decide_alert(action,changed,text=str(record),score=int(record.get("relevance_score",0)))
     alert_sent=alert.send
     alert_reason=alert.reason
