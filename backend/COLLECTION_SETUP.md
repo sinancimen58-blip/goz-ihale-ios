@@ -2,22 +2,20 @@
 
 Collection is opt-in: a source must be listed in `GOZ_IHALE_ENABLED_SOURCE_KEYS` and have an explicitly configured adapter. Do not enable an unreviewed source. The adapters reject non-HTTPS, credentials, fragments, non-public IP addresses and redirects, and cap downloaded content. These checks are defense-in-depth, not a substitute for server isolation and connection-time IP pinning.
 
-## Fast-start: official KHGM listing (HTML)
+## Fast-start: official KHGM and DMO HTML listings
 
-The KHGM Central Purchasing notice list is a public official listing page and is registered in the source catalog:
+The two reviewed public listing pages are:
 
-`https://khgm.saglik.gov.tr/TR-119527/ihale-duyurulari.html`
+- KHGM Central Purchasing: `https://khgm.saglik.gov.tr/TR-119527/ihale-duyurulari.html`
+- DMO: `https://www.dmo.gov.tr/Ihale/Liste?type=1`
 
-On the server, set:
+For a VPS, run from the backend folder:
 
-- `GOZ_IHALE_ENABLED_SOURCE_KEYS=khgm_central_notices`
-- `GOZ_IHALE_HTML_SOURCE_KEYS=khgm_central_notices`
+```bash
+bash scripts/enable_live_collection.sh
+```
 
-The registered page URL is used by default. Optional override:
-
-- `GOZ_IHALE_HTML_PAGE_KHGM_CENTRAL_NOTICES`
-
-The adapter captures notice link titles and links from the official listing page; it does not extract the full document text or bid deadlines from attached PDFs. Review its collected output before relying on it operationally. A live collection is only confirmed when the scan ledger records a successful run.
+The helper writes the two source allowlist values and the exact listing URLs to `.env`, generates a write token if none exists, rebuilds the API, runs both scans, and reports the scan ledger. It preserves other .env entries. The API stays bound to loopback. When root and an active cron service are available, it installs a separate weekday 09:00/17:00 Europe/Istanbul schedule. It does not automatically skip Turkish public holidays.
 
 ## RSS/Atom sources
 
@@ -35,25 +33,15 @@ Configure the following only when the official portal offers a verified public f
 
 ## Run and verify
 
-1. GET `/api/sources`; confirm the source is enabled and `adapter_ready` is true.
-2. POST `/api/run-source/khgm_central_notices` with `X-Goz-Ihale-Token` to run one source, or POST `/api/run-enabled-sources` for all enabled sources.
-3. Inspect `/api/scan-runs`, `/api/scan-summary`, `/api/collected-notices`, and `/api/collection-events`.
-4. Verify title relevance and original source URLs; review attachments manually for deadlines and technical details.
-5. Test iOS using the HTTPS API base URL.
-6. Expand to more sources after the first source's successful live run.
+Inspect `/api/health`, `/api/sources`, `/api/scan-summary`, `/api/collected-notices`, and `/api/priority-notices`. Verify source links and deadlines; HTML list extraction does not replace manual review of official documents and attachments.
 
-## Scheduled jobs
+## Current probe status (27 Nov 2026)
 
-The workflow is scheduled for weekdays at 06:00 and 14:00 UTC (09:00 and 17:00 Turkey time, UTC+3), subject to GitHub scheduling delays. Add the two repository secrets to activate remote collection. Strict scheduling may be better handled on the server.
+- KHGM central: 187 links fetched, 1 relevant, 1 new notice in an ephemeral CI database.
+- Pamukkale University Hospital: 151 links fetched, 0 relevant in the current probe.
+- DMO: 92 links fetched, 0 relevant in the current probe.
+- EKAP: probe failed; keep disabled.
+- Dokuz Eylül: network probe failed; keep disabled.
+- KHGM Supply: adapter/configuration missing or invalid; keep disabled.
 
-The source catalog and discovery plans are metadata, not evidence that live collection is working. Mark sources live only after successful scan-ledger verification.
-
-## Additional hospital sources (probed)
-
-- `pau_hospital_purchase`: official Pamukkale University Hospital purchasing listing, `https://www.pau.edu.tr/ihale/tr`. Live HTML probe fetched 151 links; the current probe found no relevant ophthalmology candidates. Keep opt-in.
-- `dmo`: public DMO listing, `https://www.dmo.gov.tr/Ihale/Liste?type=1`. Live HTML probe fetched 33 links; the current probe found no relevant ophthalmology candidates. Keep opt-in.
-- `ekap`: official EKAP bulletin page, `https://ekap.kik.gov.tr/ekap/ilan/bultenindirme.aspx`. Current adapter probe failed; keep disabled until a successful scan-ledger verification.
-- `deu_hospital_purchase`: official Dokuz Eylül hospital purchasing page, `https://hastane2.deu.edu.tr/satin-alma/`. The latest optional-source probe failed; keep disabled until successful scan-ledger verification.
-- `khgm_supply`: separate KHGM procurement portal. The latest probe reported adapter missing/invalid; keep disabled until configuration and reachability are verified.
-
-The live-source CI workflow probes these sources independently. Network/DNS failure on an optional source must not block the validated primary KHGM source.
+CI live-source probes use temporary databases; they do not prove production VPS collection is running.
