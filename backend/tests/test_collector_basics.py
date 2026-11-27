@@ -157,3 +157,5 @@ def test_source_query_plan_contains_added_terms():
     assert "pakimetri" in terms
     assert "iol" in terms
     assert "göz içi lens" in terms
+
+\ndef test_classifier_glaucoma_and_surgery_consumables():\n    from app.collector.keywords import classify_text\n    assert "Glokom cihazları" in classify_text("RNFL glaucoma analysis device")\n    assert "Göz cerrahisi sarf" in classify_text("Vitrektomi sarf malzemesi")\n\ndef test_source_plan_includes_glaucoma_and_retina_terms():\n    from app.collector.source_search_plan import TERMS\n    terms = {term.casefold() for term in TERMS}\n    assert "glokom" in terms and "vitrektomi sarf" in terms\n
