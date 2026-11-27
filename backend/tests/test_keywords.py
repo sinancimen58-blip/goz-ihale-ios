@@ -8,3 +8,8 @@ def test_phaco_classification():
 
 def test_unrelated_text():
     assert not is_relevant("Office chair and desk procurement")
+
+
+def test_eye_clinic_system_procurement_classifies_as_ophthalmic():
+    assert "Muayene ünitesi" in classify_text("İhale İlanı: Göz Poliklinik Sistemi Alımı")
+    assert is_relevant("İhale İlanı: Göz Poliklinik Sistemi Alımı")
