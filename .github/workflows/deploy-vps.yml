@@ -96,4 +96,4 @@ jobs:
           set -euo pipefail
           PORT="${DEPLOY_PORT:-22}"
           REMOTE_COMMAND="cd ${DEPLOY_PATH} && git pull --ff-only origin main && cd backend && docker compose up -d --build && docker compose ps && curl -fsS --retry 10 --retry-connrefused --retry-delay 2 http://127.0.0.1:8000/api/health"
-          ssh -p "$PORT" -o StrictHostKeyChecking=yes -o BatchMode=yes " ${DEPLOY_USER}@${DEPLOY_HOST}" "$REMOTE_COMMAND"
+          ssh -p "$PORT" -o StrictHostKeyChecking=yes -o BatchMode=yes "${DEPLOY_USER}@${DEPLOY_HOST}" "$REMOTE_COMMAND"
