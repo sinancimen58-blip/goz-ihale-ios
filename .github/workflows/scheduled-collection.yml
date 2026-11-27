@@ -1,35 +1,19 @@
 name: Scheduled source collection
 on:
   schedule:
-    - cron: "0 6,14 * * 1-5"
+    - cron: '0 6,14 * * 1-5'
   workflow_dispatch:
 jobs:
   collect:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    env:
-      GOZ_IHALE_ENABLED_SOURCE_KEYS: ${{ secrets.GOZ_IHALE_ENABLED_SOURCE_KEYS }}
-      GOZ_IHALE_FEED_EKAP: ${{ secrets.GOZ_IHALE_FEED_EKAP }}
-      GOZ_IHALE_FEED_DMO: ${{ secrets.GOZ_IHALE_FEED_DMO }}
-      GOZ_IHALE_FEED_ILAN: ${{ secrets.GOZ_IHALE_FEED_ILAN }}
-      GOZ_IHALE_FEED_RESIMIGAZETE: ${{ secrets.GOZ_IHALE_FEED_RESIMIGAZETE }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - run: pip install -r backend/requirements.txt
-      - name: Run configured public feed adapters
-        working-directory: backend
+      - name: Trigger VPS collector and persist results on server
+        env:
+          API_TOKEN: ${{ secrets.GOZ_IHALE_API_WRITE_TOKEN }}
         run: |
-          python - <<'PY'
-          from app.collector.runner import run_enabled_sources
-          from app.collector.runner import enabled_keys
-          keys = enabled_keys()
-          print("Explicitly enabled source keys:", sorted(keys))
-          results = run_enabled_sources()
-          print("Run results:", results)
-          if not keys:
-              print("No source enabled. Collection did not contact sources.")
-          PY
+          if [ -z "$API_TOKEN" ]; then echo "Missing GOZ_IHALE_API_WRITE_TOKEN repository secret"; exit 1; fi
+          curl --fail --silent --show-error --max-time 60 \\
+            -X POST -H "X-Goz-Ihale-Token: $API_TOKEN" \\
+            http://89.251.18.186/api/run-enabled-sources
