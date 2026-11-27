@@ -23,10 +23,19 @@ class _Links(HTMLParser):
                 self._href=href; self._text=[]
     def handle_data(self,data):
         if self._href is not None: self._text.append(data)
-    def handle_endtag(self,tag):
-        if tag.lower()=="a" and self._href is not None:
+    def _finish_anchor(self):
+        if self._href is not None:
             self.links.append((self._href," ".join(self._text).strip()))
             self._href=None; self._text=[]
+
+    def handle_endtag(self,tag):
+        if tag.lower()=="a":
+            self._finish_anchor()
+
+    def close(self):
+        super().close()
+        # Some official notice pages contain truncated HTML with unclosed anchors.
+        self._finish_anchor()
 
 class _NoRedirect(HTTPRedirectHandler):
     def redirect_request(self,req,fp,code,msg,headers,newurl):
@@ -56,7 +65,7 @@ class OfficialHTMLAdapter(SourceAdapter):
         with build_opener(_NoRedirect()).open(req,timeout=15) as response:
             data=response.read(MAX_BYTES+1)
         if len(data)>MAX_BYTES: raise ValueError("Page exceeds size limit.")
-        parser=_Links(); parser.feed(data.decode("utf-8","replace"))
+        parser=_Links(); parser.feed(data.decode("utf-8","replace")); parser.close()
         out=[]
         seen_urls=set()
         for href,title in parser.links:
