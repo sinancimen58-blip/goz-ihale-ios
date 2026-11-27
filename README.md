@@ -9,6 +9,12 @@ Ophthalmology procurement notice intelligence: source discovery, filtering, dedu
 - iOS prototype loads `/api/priority-notices` from a configurable API URL.
 - Live collector is not yet deployed to a persistent public server.
 
+## Live progress dashboard
+
+- Intended URL: https://sinancimen58-blip.github.io/goz-ihale-ios/
+- The dashboard reads repository commits and GitHub Actions evidence and refreshes every 30 seconds. It does not claim production collection or deployment from CI-only tests.
+- Initial GitHub Pages site creation is blocked by the workflow token's integration permissions. One-time manual setup is required: **Settings → Pages → Build and deployment → Source: GitHub Actions**. Then rerun the `Publish live project dashboard` workflow.
+
 ## Start here
 - [72-hour MVP runbook](docs/MVP_72H_RUNBOOK.md)
 - [Collection setup](backend/COLLECTION_SETUP.md)
