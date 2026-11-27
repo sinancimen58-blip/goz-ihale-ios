@@ -2,7 +2,7 @@ from app.collector.registry import SOURCES, list_sources, get_source
 
 def test_registry_has_broad_source_coverage():
     keys = {source.key for source in SOURCES}
-    assert {"ekap", "kik", "dmo", "khgm_central", "khgm_central_notices", "khgm_supply", "ilan", "resmigazete", "ted", "undp", "worldbank", "ebrd", "ihaletara", "ihale365"} <= keys
+    assert {"ekap", "kik", "dmo", "khgm_central", "khgm_central_notices", "khgm_supply", "ushas", "kizilay", "kizilay_logistics", "tika", "presidency_support", "tdt", "turksoy", "turkpa", "turkic_academy", "turkic_fund", "ilan", "resmigazete", "ted", "undp", "worldbank", "ebrd", "ihaletara", "ihale365"} <= keys
 
 def test_sources_are_disabled_by_default():
     assert all(source.enabled is False for source in SOURCES)
