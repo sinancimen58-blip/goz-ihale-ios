@@ -60,6 +60,13 @@ jobs:
           DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
         run: |
           set -euo pipefail
+          # Trim accidental leading/trailing whitespace from secret values.
+          DEPLOY_HOST="$(printf '%s' "$DEPLOY_HOST" | xargs)"
+          DEPLOY_USER="$(printf '%s' "$DEPLOY_USER" | xargs)"
+          DEPLOY_PATH="$(printf '%s' "$DEPLOY_PATH" | xargs)"
+          SSH_KEY="$(printf '%s' "$SSH_KEY" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          KNOWN_HOSTS="$(printf '%s' "$KNOWN_HOSTS" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          DEPLOY_PORT="$(printf '%s' "${DEPLOY_PORT:-22}" | xargs)"
           if [[ -z "${DEPLOY_HOST}" || -z "${DEPLOY_USER}" || -z "${DEPLOY_PATH}" || -z "${SSH_KEY}" || -z "${KNOWN_HOSTS}" ]]; then
             echo "ready=false" >> "$GITHUB_OUTPUT"
             echo "Deployment secrets are not configured; deployment skipped."
@@ -70,7 +77,7 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          if [[ ! "${DEPLOY_PATH}" =~ ^/[A-Za-z0-9._/-]+$ || ! "${DEPLOY_USER}" =~ ^[A-Za-z0-9._-]+$ || ! "${DEPLOY_PORT:-22}" =~ ^[0-9]+$ ]]; then
+          if [[ ! "${DEPLOY_PATH}" =~ ^/[A-Za-z0-9._/-]+$ || ! "${DEPLOY_USER}" =~ ^[A-Za-z0-9._-]+$ || ! "${DEPLOY_PORT}" =~ ^[0-9]+$ ]]; then
             echo "ready=false" >> "$GITHUB_OUTPUT"
             echo "Deployment path, user or port has an invalid format; deployment skipped."
             exit 0
