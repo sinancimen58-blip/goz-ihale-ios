@@ -95,5 +95,5 @@ jobs:
         run: |
           set -euo pipefail
           PORT="${DEPLOY_PORT:-22}"
-          REMOTE_COMMAND="cd ${DEPLOY_PATH} && git pull --ff-only origin main && cd backend && docker compose up -d --build && docker compose ps && curl -fsS --retry 10 --retry-connrefused --retry-delay 2 http://127.0.0.1:8000/api/health"
+          REMOTE_COMMAND="set -euo pipefail; cd ${DEPLOY_PATH}; git pull --ff-only origin main; cd backend; if [ \$(id -u) -eq 0 ]; then bash scripts/enable_live_collection.sh || scan_exit=\$?; else sudo -n bash scripts/enable_live_collection.sh || scan_exit=\$?; fi; docker compose ps; curl -fsS --retry 10 --retry-connrefused --retry-delay 2 http://127.0.0.1:8000/api/health; curl -fsS http://127.0.0.1:8000/api/scan-summary; if [ \${scan_exit:-0} -ne 0 ]; then exit \${scan_exit}; fi
           ssh -p "$PORT" -o StrictHostKeyChecking=yes -o BatchMode=yes "${DEPLOY_USER}@${DEPLOY_HOST}" "$REMOTE_COMMAND"
