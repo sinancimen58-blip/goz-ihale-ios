@@ -53,3 +53,24 @@ def test_payment_and_method_persist_and_trigger_update(tmp_path, monkeypatch):
     assert result["action"] == "updated"
     assert "procurement_method" in result["changed_fields"]
     assert "payment_terms" in result["changed_fields"]
+
+def test_alert_outbox_persists_and_deduplicates(tmp_path, monkeypatch):
+    setup(tmp_path, monkeypatch)
+    first=repo.ingest(sample())
+    second=repo.ingest(sample())
+    pending=repo.list_pending_alerts()
+    assert first["alert"] and not second["alert"]
+    assert len(pending)==1
+    assert pending[0]["payload"]["title"]=="OCT cihazı alımı"
+    repo.mark_alert_delivery(pending[0]["alert_key"],True)
+    assert repo.notification_counts()["sent"]==1
+    assert repo.list_pending_alerts()==[]
+
+def test_outbox_failure_retries_then_stops(tmp_path, monkeypatch):
+    setup(tmp_path, monkeypatch)
+    repo.ingest(sample())
+    item=repo.list_pending_alerts()[0]
+    for _ in range(8):
+        repo.mark_alert_delivery(item["alert_key"],False,"test failure")
+    assert repo.list_pending_alerts()==[]
+    assert repo.notification_counts()["failed"]==1
