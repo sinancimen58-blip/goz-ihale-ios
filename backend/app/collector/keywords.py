@@ -22,7 +22,8 @@ KEYWORD_GROUPS = {
     "Aberrometre": ["aberometre", "aberrometer", "wavefront"],
     "Muayene ünitesi": ["oftalmik muayene ünitesi", "ophthalmic examination unit", "göz muayene ünitesi"],
     "A-scan / B-scan": ["a scan", "a-scan", "b scan", "b-scan", "ultrasonik biyometri", "ocular ultrasound"],
-    "Göz cerrahisi sarf": ["oftalmik sarf", "göz cerrahisi sarf", "intraoküler", "göz cerrahi sarf malzeme"],
+    "Glokom cihazları": ["glokom", "glaucoma", "glokom analiz", "glaucoma analyzer", "oct glokom", "optik disk", "rnfl", "ganglion cell analysis", "göz tansiyonu"],
+    "Göz cerrahisi sarf": ["oftalmik sarf", "göz cerrahisi sarf", "intraoküler", "göz cerrahi sarf malzeme", "vitrektomi sarf", "vitrectomy consumables", "retina cerrahisi sarf", "katarakt cerrahi sarf"],
 }
 
 def _normalize(text: str) -> str:
