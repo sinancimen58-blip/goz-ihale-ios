@@ -45,13 +45,24 @@ def parse_feed(xml_bytes: bytes, source_name: str, source_url: str):
             if found is not None and found.text:
                 return found.text.strip()
         return ""
+    def link_for(node):
+        # RSS links are text nodes; Atom links are href attributes. Prefer alternate links.
+        rss_link=text_for(node,["link"])
+        if rss_link: return rss_link
+        links=node.findall("{*}link")
+        for link_node in links:
+            rel=link_node.attrib.get("rel","alternate").casefold()
+            href=link_node.attrib.get("href","").strip()
+            if href and rel in ("alternate",""):
+                return href
+        for link_node in links:
+            href=link_node.attrib.get("href","").strip()
+            if href: return href
+        return ""
     nodes=root.findall(".//item") or root.findall(".//{*}entry")
     for node in nodes[:MAX_ITEMS]:
         title=text_for(node,["title","{*}title"])
-        link=text_for(node,["link","{*}link"])
-        if not link:
-            link_node=node.find("{*}link")
-            if link_node is not None: link=link_node.attrib.get("href","")
+        link=link_for(node)
         description=text_for(node,["description","summary","content","{*}summary","{*}content"])
         if description and len(description)>12000: description=description[:12000]
         if title:
