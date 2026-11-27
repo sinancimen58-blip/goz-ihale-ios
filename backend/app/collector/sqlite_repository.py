@@ -1,6 +1,6 @@
 """SQLite-backed notice ingestion repository with fingerprint deduplication."""
 from __future__ import annotations
-import json, sqlite3, os
+import json, sqlite3, os, hashlib
 from pathlib import Path
 from typing import Any
 from .normalize import fingerprint_notice, material_change, notice_match_keys
@@ -32,6 +32,9 @@ def initialize():
         db.execute("""CREATE TABLE IF NOT EXISTS collected_notice_events (
             id INTEGER PRIMARY KEY AUTOINCREMENT, fingerprint TEXT NOT NULL,
             event_type TEXT NOT NULL, changed_fields TEXT, payload_json TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP)""")
+        db.execute("""CREATE TABLE IF NOT EXISTS alert_deduplication (
+            alert_key TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, event_type TEXT NOT NULL,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP)""")
 
 def ingest(record: dict[str, Any]) -> dict[str, Any]:
@@ -87,7 +90,22 @@ def ingest(record: dict[str, Any]) -> dict[str, Any]:
                     event_type="status_change"
             db.execute("INSERT INTO collected_notice_events (fingerprint,event_type,changed_fields,payload_json) VALUES (?,?,?,?)",(fingerprint,event_type,json.dumps(changed,ensure_ascii=False),payload))
     alert=decide_alert(action,changed,text=str(record),score=int(record.get("relevance_score",0)))
-    return {"fingerprint":fingerprint,"action":action,"changed_fields":changed,"alert":alert.send,"alert_reason":alert.reason,"priority":alert.priority}
+    alert_sent=alert.send
+    alert_reason=alert.reason
+    alert_key=None
+    if alert.send:
+        event_type_for_alert=event_type if action != "unchanged" else action
+        changed_values={field:record.get(field) for field in changed}
+        key_material=json.dumps({"fingerprint":fingerprint,"event_type":event_type_for_alert,"changed":changed_values},sort_keys=True,ensure_ascii=False,default=str)
+        alert_key=hashlib.sha256(key_material.encode("utf-8")).hexdigest()
+        with connection() as db:
+            prior=db.execute("SELECT alert_key FROM alert_deduplication WHERE alert_key=?",(alert_key,)).fetchone()
+            if prior:
+                alert_sent=False
+                alert_reason="Aynı olay için bildirim daha önce oluşturuldu; tekrar bastırıldı"
+            else:
+                db.execute("INSERT INTO alert_deduplication(alert_key,fingerprint,event_type) VALUES (?,?,?)",(alert_key,fingerprint,event_type_for_alert))
+    return {"fingerprint":fingerprint,"action":action,"changed_fields":changed,"alert":alert_sent,"alert_reason":alert_reason,"priority":alert.priority,"alert_key":alert_key}
 
 def list_notices(limit: int=100):
     initialize()
