@@ -178,3 +178,19 @@ def test_notice_match_keys_has_title_institution_fallback():
     keys = notice_match_keys({"title":"OCT alımı", "institution":"Hastane", "publication_date":"2026-11-27"})
     assert len(keys) == 2
     assert notice_match_keys({"title":"", "institution":"Hastane"}) == []
+
+
+def test_ingestion_cross_source_duplicate_identity(monkeypatch, tmp_path):
+    from app.collector import sqlite_repository as repo
+    monkeypatch.setattr(repo, 'DB_PATH', str(tmp_path / 'ingestion.sqlite'))
+    first = {'title':'OCT cihazı alımı','institution':'Örnek Hastane','publication_date':'2026-11-27','source_name':'Kaynak A','source_url':'https://a.test'}
+    second = dict(first, source_name='Kaynak B', source_url='https://b.test', deadline='2026-12-15')
+    one = repo.ingest(first)
+    two = repo.ingest(second)
+    assert one['action'] == 'new'
+    assert two['action'] == 'updated'
+    notices = repo.list_notices()
+    assert len(notices) == 1
+    assert notices[0]['deadline'] == '2026-12-15'
+    events = repo.list_events(fingerprint=one['fingerprint'])
+    assert len(events) == 2
