@@ -28,6 +28,10 @@ def configure_env_file(path: str | Path) -> bool:
     token = secrets.token_hex(32) if generated else existing_token
 
     values = dict(VALUES)
+    for line in lines:
+        if line.startswith("GOZ_IHALE_PORT="):
+            values["GOZ_IHALE_PORT"] = line.split("=", 1)[1].strip() or VALUES["GOZ_IHALE_PORT"]
+            break
     values[TOKEN_KEY] = token
     output = []
     written = set()
