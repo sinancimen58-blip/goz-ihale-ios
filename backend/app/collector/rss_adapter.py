@@ -1,4 +1,4 @@
-"""RSS/Atom adapter with conservative URL validation for public feeds."""
+"""RSS/Atom adapter with conservative URL validation and bounded downloads."""
 from urllib.request import Request, build_opener, HTTPRedirectHandler
 from urllib.parse import urlparse
 from xml.etree import ElementTree as ET
@@ -6,17 +6,24 @@ import socket, ipaddress
 from .adapter import SourceAdapter
 from .models import NoticeCandidate
 
+MAX_FEED_BYTES = 2_000_000
+MAX_ITEMS = 500
+
 def _validate_feed_url(url: str):
+    if not isinstance(url, str) or len(url) > 2048:
+        raise ValueError("Feed URL is invalid or too long.")
     parsed=urlparse(url)
-    if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
-        raise ValueError("Feed URL must be public HTTPS without credentials.")
+    if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password or parsed.fragment:
+        raise ValueError("Feed URL must be public HTTPS without credentials or fragments.")
     host=parsed.hostname.casefold()
     if host=="localhost" or host.endswith(".localhost"):
         raise ValueError("Local feed hosts are not allowed.")
     try:
         addresses=socket.getaddrinfo(host,parsed.port or 443,type=socket.SOCK_STREAM)
-    except OSError as exc:
+    except (OSError, ValueError) as exc:
         raise ValueError("Feed host could not be resolved.") from exc
+    if not addresses:
+        raise ValueError("Feed host has no addresses.")
     for item in addresses:
         ip=ipaddress.ip_address(item[4][0])
         if not ip.is_global:
@@ -28,6 +35,8 @@ class _NoRedirect(HTTPRedirectHandler):
         raise ValueError("Feed redirects are not allowed; configure the final URL directly.")
 
 def parse_feed(xml_bytes: bytes, source_name: str, source_url: str):
+    if not isinstance(xml_bytes, bytes) or len(xml_bytes) > MAX_FEED_BYTES:
+        raise ValueError("Feed content exceeds the size limit.")
     root=ET.fromstring(xml_bytes)
     candidates=[]
     def text_for(node,names):
@@ -37,7 +46,7 @@ def parse_feed(xml_bytes: bytes, source_name: str, source_url: str):
                 return found.text.strip()
         return ""
     nodes=root.findall(".//item") or root.findall(".//{*}entry")
-    for node in nodes:
+    for node in nodes[:MAX_ITEMS]:
         title=text_for(node,["title","{*}title"])
         link=text_for(node,["link","{*}link"])
         if not link:
@@ -54,10 +63,10 @@ class RSSFeedAdapter(SourceAdapter):
         self.source_name=source_name
         self.feed_url=_validate_feed_url(feed_url)
     def collect(self):
-        # Validate again immediately before connecting; redirects are disabled by default urllib behavior only for protocol changes,
-        # so the destination is checked before the initial request.
         _validate_feed_url(self.feed_url)
         request=Request(self.feed_url,headers={"User-Agent":"GozIhale/0.1 (public feed reader)"})
         with build_opener(_NoRedirect()).open(request,timeout=10) as response:
-            data=response.read(2_000_000)
+            data=response.read(MAX_FEED_BYTES+1)
+        if len(data)>MAX_FEED_BYTES:
+            raise ValueError("Feed content exceeds the size limit.")
         return parse_feed(data,self.source_name,self.feed_url)
