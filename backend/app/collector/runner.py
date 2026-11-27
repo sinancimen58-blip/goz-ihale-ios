@@ -5,6 +5,7 @@ from .registry import list_sources
 from .scan_ledger import record_run
 from .filtering import screen_many
 from .sqlite_repository import ingest
+from .notifications import dispatch_pending_telegram
 from .rss_adapter import RSSFeedAdapter
 from .official_html_adapter import OfficialHTMLAdapter
 from urllib.parse import urlparse
@@ -93,6 +94,7 @@ def run_source(source_key: str):
             actions[action]=actions.get(action,0)+1
             if result.get("alert"):
                 alert_count+=1
+        notification_summary=dispatch_pending_telegram()
         duration_ms=int((time.perf_counter()-started)*1000)
         message=(f"Fetched: {len(candidates)}; relevant: {len(screened)}; "
                  f"new: {actions['new']}; updated: {actions['updated']}; "
@@ -103,7 +105,10 @@ def run_source(source_key: str):
                  "unchanged_count":actions["unchanged"],"alert_candidates":alert_count,
                  "duration_ms":duration_ms,"retry_count":retries}
         status="success_empty" if len(candidates)==0 else "success"
-        return record_run(source,status,message,len(screened),metrics)
+        result=record_run(source,status,message,len(screened),metrics)
+        if isinstance(result,dict):
+            result["notification_delivery"]=notification_summary
+        return result
     except Exception as exc:
         retries=max(retries,int(getattr(exc,"retry_count",0)))
         duration_ms=int((time.perf_counter()-started)*1000)

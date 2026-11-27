@@ -18,6 +18,7 @@ def _patch_run(monkeypatch,adapter,recorded):
     monkeypatch.setattr(runner,"record_run",lambda source,status,message,notices_found,metrics=None:
                         recorded.update(status=status,message=message,metrics=metrics) or recorded)
     monkeypatch.setattr(runner.time,"sleep",lambda delay: None)
+    monkeypatch.setattr(runner,"dispatch_pending_telegram",lambda:{"configured":False,"sent":0,"failed":0,"pending":0})
 
 def test_collect_retries_transient_errors_and_records_retry_count(monkeypatch):
     recorded={}
