@@ -3,6 +3,8 @@ services:
     build: .
     container_name: gozihale-api
     restart: unless-stopped
+    # Pass server-only configuration (including write token and source settings).
+    env_file: .env
     # Keep the API private behind Nginx; do not publish port 8000 publicly.
     ports:
       - "127.0.0.1:${GOZ_IHALE_PORT:-8000}:8000"
