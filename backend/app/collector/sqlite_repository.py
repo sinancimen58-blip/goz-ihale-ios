@@ -3,7 +3,7 @@ from __future__ import annotations
 import json, sqlite3, os
 from pathlib import Path
 from typing import Any
-from .normalize import fingerprint_notice, material_change
+from .normalize import fingerprint_notice, material_change, notice_match_keys
 from .alerts import decide_alert
 
 DB_PATH=os.getenv("GOZ_IHALE_INGEST_DB", str(Path(__file__).resolve().parents[2] / "ingestion.db"))
@@ -27,6 +27,7 @@ def initialize():
         for field in ("procurement_method", "payment_terms"):
             if field not in existing:
                 db.execute(f"ALTER TABLE collected_notices ADD COLUMN {field} TEXT")
+        db.execute("""CREATE TABLE IF NOT EXISTS notice_identity_keys (identity_key TEXT PRIMARY KEY, fingerprint TEXT NOT NULL)""")
         db.execute("""CREATE TABLE IF NOT EXISTS collected_notice_events (
             id INTEGER PRIMARY KEY AUTOINCREMENT, fingerprint TEXT NOT NULL,
             event_type TEXT NOT NULL, changed_fields TEXT, payload_json TEXT,
@@ -36,8 +37,15 @@ def ingest(record: dict[str, Any]) -> dict[str, Any]:
     initialize()
     fingerprint=fingerprint_notice(record.get("title",""),record.get("institution",""),record.get("publication_date"),record.get("notice_id"))
     payload=json.dumps(record,ensure_ascii=False,default=str)
+    identity_keys=notice_match_keys(record)
     with connection() as db:
         oldrow=db.execute("SELECT * FROM collected_notices WHERE fingerprint=?",(fingerprint,)).fetchone()
+        if oldrow is None and not record.get("notice_id") and identity_keys:
+            marks=",".join("?" for _ in identity_keys)
+            match=db.execute("SELECT fingerprint FROM notice_identity_keys WHERE identity_key IN ("+marks+") LIMIT 1",identity_keys).fetchone()
+            if match:
+                fingerprint=match["fingerprint"]
+                oldrow=db.execute("SELECT * FROM collected_notices WHERE fingerprint=?",(fingerprint,)).fetchone()
         old=dict(oldrow) if oldrow else None
         if old is None:
             action="new"; changed=[]
@@ -51,6 +59,8 @@ def ingest(record: dict[str, Any]) -> dict[str, Any]:
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",[fingerprint,*values,payload])
         else:
             db.execute("""UPDATE collected_notices SET notice_id=?,title=?,institution=?,city=?,publication_date=?,deadline=?,category=?,quantity=?,specification=?,estimated_price=?,document_url=?,source_name=?,source_url=?,summary=?,procurement_method=?,payment_terms=?,status=?,relevance_score=?,payload_json=?,last_seen=CURRENT_TIMESTAMP WHERE fingerprint=?""",[*values,payload,fingerprint])
+        for identity_key in identity_keys:
+            db.execute("INSERT OR IGNORE INTO notice_identity_keys(identity_key,fingerprint) VALUES (?,?)",(identity_key,fingerprint))
         if action != "unchanged":
             db.execute("INSERT INTO collected_notice_events (fingerprint,event_type,changed_fields,payload_json) VALUES (?,?,?,?)",(fingerprint,action,json.dumps(changed,ensure_ascii=False),payload))
     alert=decide_alert(action,changed,text=str(record),score=int(record.get("relevance_score",0)))
