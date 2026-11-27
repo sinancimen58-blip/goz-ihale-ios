@@ -9,7 +9,7 @@ from typing import Any
 
 def normalize_text(value: str | None) -> str:
     value = value or ""
-    value = unicodedata.normalize("NFKC", value).casefold()
+    value = unicodedata.normalize("NFKC", value).replace("I", "ı").replace("İ", "i").casefold()
     value = re.sub(r"\s+", " ", value).strip()
     return value
 
