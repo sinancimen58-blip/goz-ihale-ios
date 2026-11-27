@@ -30,3 +30,44 @@ def test_fingerprint_stable_normalized():
 
 def test_material_change_detects_deadline():
     assert "deadline" in material_change({"deadline":"2026-12-01"},{"deadline":"2026-12-02"})
+
+from types import SimpleNamespace
+from app.collector import runner
+
+
+def test_run_source_counts_ingestion_outcomes(monkeypatch):
+    source = SimpleNamespace(key="ekap", name="EKAP", url="https://example.org")
+    adapter = SimpleNamespace(collect=lambda: ["candidate-a", "candidate-b", "candidate-c"])
+    monkeypatch.setattr(runner, "list_sources", lambda: [source])
+    monkeypatch.setattr(runner, "enabled_keys", lambda: {"ekap"})
+    monkeypatch.setattr(runner, "configured_adapters", lambda: {"ekap": adapter})
+    monkeypatch.setattr(runner, "screen_many", lambda candidates: [
+        {"title": str(c), "source_url": None} for c in candidates
+    ])
+    outcomes = iter([
+        {"action": "new", "alert": True},
+        {"action": "updated", "alert": False},
+        {"action": "unchanged", "alert": True},
+    ])
+    monkeypatch.setattr(runner, "ingest", lambda record: next(outcomes))
+    captured = {}
+    monkeypatch.setattr(runner, "record_run", lambda s, status, message, count:
+        captured.update(status=status, message=message, count=count) or captured)
+
+    result = runner.run_source("ekap")
+    assert result["status"] == "success"
+    assert captured["count"] == 3
+    assert "new: 1" in captured["message"]
+    assert "updated: 1" in captured["message"]
+    assert "unchanged: 1" in captured["message"]
+    assert "alert candidates: 2" in captured["message"]
+
+
+def test_run_source_unknown_key(monkeypatch):
+    monkeypatch.setattr(runner, "list_sources", lambda: [])
+    captured = {}
+    monkeypatch.setattr(runner, "record_run", lambda s, status, message, count:
+        captured.update(status=status, message=message, count=count) or captured)
+    result = runner.run_source("unknown")
+    assert result["status"] == "unknown_source"
+    assert result["notices_saved"] == 0
