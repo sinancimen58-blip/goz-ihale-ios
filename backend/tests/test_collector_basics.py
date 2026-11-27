@@ -51,8 +51,7 @@ def test_run_source_counts_ingestion_outcomes(monkeypatch):
     ])
     monkeypatch.setattr(runner, "ingest", lambda record: next(outcomes))
     captured = {}
-    monkeypatch.setattr(runner, "record_run", lambda s, status, message, count:
-        captured.update(status=status, message=message, count=count) or captured)
+    monkeypatch.setattr(runner, "record_run", lambda s, status, message, count, metrics=None:\n        captured.update(status=status, message=message, count=count, metrics=metrics) or captured)
 
     result = runner.run_source("ekap")
     assert result["status"] == "success"
