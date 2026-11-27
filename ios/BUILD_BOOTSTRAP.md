@@ -15,3 +15,10 @@
 - The simulator build is not a signed device IPA.
 - Device distribution requires Apple Developer signing credentials and TestFlight provisioning.
 - Demo login remains a UI placeholder and is not real authentication.
+
+## MVP verification checklist
+
+- [ ] Simulator build verified by `iOS Prototype Build` workflow.
+- [ ] Configure the app with the deployed HTTPS API URL (production endpoint not yet verified).
+- [ ] Confirm list refresh, search, deadline urgency and official-source links against live data.
+- [ ] Device distribution remains separate: Apple signing/TestFlight credentials are required.
