@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .schemas import Tender
 from .collector.scoring import relevance_score
 from .collector.deadlines import days_remaining, urgency_label
-from .collector.sqlite_repository import list_notices as list_collected_notices, list_events as list_ingestion_events, ingest as ingest_collected_notice
+from .collector.sqlite_repository import list_notices as list_collected_notices, list_events as list_ingestion_events, ingest as ingest_collected_notice, list_source_observations as list_observations
 import sqlite3, os
 from pathlib import Path
 
@@ -82,6 +82,11 @@ def collected_notices(limit: int = 100):
 def collection_events(limit: int = 100, fingerprint: str | None = None):
     """List new/updated notice ingestion events."""
     return list_ingestion_events(limit, fingerprint)
+
+@app.get("/api/source-observations", tags=["collection"])
+def source_observations(fingerprint: str | None = None, limit: int = 100):
+    """List source provenance records, optionally for one consolidated notice."""
+    return list_observations(fingerprint, limit)
 
 @app.post("/api/collect/record", tags=["collection"])
 def record_collected_notice(payload: dict, x_goz_ihale_token: str|None=Header(default=None)):
