@@ -216,3 +216,14 @@ def test_ingest_classifies_deadline_and_cancellation_events(monkeypatch, tmp_pat
     repo.ingest(cancelled)
     events=repo.list_events(fingerprint=first['fingerprint'])
     assert events[0]['event_type']=='cancellation'
+
+
+def test_ingest_classifies_deadline_extension(monkeypatch, tmp_path):
+    from app.collector import sqlite_repository as repo
+    monkeypatch.setattr(repo, 'DB_PATH', str(tmp_path / 'extension.sqlite'))
+    base = {'title':'OCT cihazı alımı','institution':'Örnek Hastane','publication_date':'2026-11-27','source_name':'Kaynak','deadline':'2026-12-10'}
+    first=repo.ingest(base)
+    extended=dict(base,deadline='2026-12-20')
+    repo.ingest(extended)
+    events=repo.list_events(fingerprint=first['fingerprint'])
+    assert events[0]['event_type']=='deadline_extension'
