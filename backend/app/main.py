@@ -96,8 +96,21 @@ from .collector.scan_ledger import record_run, list_runs as list_scan_runs
 
 @app.get("/api/sources", tags=["collection"])
 def sources():
-    """Configured source catalog; entries are not active scrapers."""
-    return [{"key":s.key,"name":s.name,"group":s.source_group,"url":s.url,"official":s.official,"enabled":s.key in enabled_keys(),"notes":s.notes} for s in list_sources()]
+    """Catalog plus safe readiness status; never exposes feed configuration secrets."""
+    enabled=enabled_keys()
+    configured_keys={s.key for s in list_sources() if os.getenv("GOZ_IHALE_FEED_"+s.key.upper().replace("-","_"))}
+    try:
+        from .collector.runner import configured_adapters
+        ready_keys=set(configured_adapters().keys())
+    except Exception:
+        ready_keys=set()
+    return [{
+        "key":s.key,"name":s.name,"group":s.source_group,"url":s.url,
+        "official":s.official,"enabled":s.key in enabled,
+        "feed_configured":s.key in configured_keys,"adapter_ready":s.key in ready_keys,
+        "status":("ready" if s.key in ready_keys else "disabled" if s.key not in enabled else "configuration_incomplete"),
+        "notes":s.notes
+    } for s in list_sources()]
 
 @app.get("/api/scan-runs", tags=["collection"])
 def scan_runs(limit: int = 100):
