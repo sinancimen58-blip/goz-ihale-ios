@@ -1,5 +1,5 @@
 """Controlled source runner. Explicit source allowlist and verified feed URLs required."""
-import os
+import os, time
 from .registry import list_sources
 from .scan_ledger import record_run
 from .filtering import screen_many
@@ -36,6 +36,7 @@ def run_source(source_key: str):
         status="disabled" if source_key not in enabled else "adapter_missing_or_invalid"
         message="Source not explicitly enabled." if source_key not in enabled else "Enabled but feed URL missing or invalid; no request made."
         return record_run(source,status,message,0)
+    started=time.perf_counter()
     try:
         candidates=adapter.collect()
         screened=screen_many(candidates)
@@ -49,12 +50,19 @@ def run_source(source_key: str):
             actions[action]=actions.get(action,0)+1
             if result.get("alert"):
                 alert_count+=1
+        duration_ms=int((time.perf_counter()-started)*1000)
         message=(f"Fetched: {len(candidates)}; relevant: {len(screened)}; "
                  f"new: {actions['new']}; updated: {actions['updated']}; "
-                 f"unchanged: {actions['unchanged']}; alert candidates: {alert_count}")
-        return record_run(source,"success",message,len(screened))
+                 f"unchanged: {actions['unchanged']}; alert candidates: {alert_count}; "
+                 f"duration: {duration_ms} ms")
+        metrics={"fetched_count":len(candidates),"relevant_count":len(screened),
+                 "new_count":actions["new"],"updated_count":actions["updated"],
+                 "unchanged_count":actions["unchanged"],"alert_candidates":alert_count,
+                 "duration_ms":duration_ms}
+        return record_run(source,"success",message,len(screened),metrics)
     except Exception as exc:
-        return record_run(source,"error",f"Collection failed ({type(exc).__name__}); details withheld to avoid leaking configuration or URLs.",0)
+        duration_ms=int((time.perf_counter()-started)*1000)
+        return record_run(source,"error",f"Collection failed ({type(exc).__name__}); details withheld to avoid leaking configuration or URLs.",0,{"duration_ms":duration_ms})
 
 def run_enabled_sources():
     enabled=enabled_keys()
