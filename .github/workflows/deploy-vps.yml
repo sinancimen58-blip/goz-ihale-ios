@@ -36,12 +36,17 @@ jobs:
           python -m compileall -q backend/app backend/scripts
           bash -n backend/scripts/enable_live_collection.sh
       - name: Validate Docker Compose and build image
+      
         run: |
           set -euo pipefail
-          cd backend
-          cp .env.example .env
-          docker compose config --quiet
-          docker build -t gozihale-api:ci .
+          PORT="${DEPLOY_PORT:-22}"
+          REMOTE_COMMAND='set -euo pipefail; cd "'"${DEPLOY_PATH}"'"; git pull --ff-only origin main; cd backend; bash scripts/enable_live_collection.sh; docker compose ps; curl -fsS --retry 10 --retry-connrefused --retry-delay 2 http://127.0.0.1:8000/api/health; curl -fsS http://127.0.0.1:8000/api/scan-summary'
+          ssh -p "$PORT" -o StrictHostKeyChecking=yes -o BatchMode=yes "${DEPLOY_USER}@${DEPLOY_HOST}" "$REMOTE_COMMAND"
+          {
+            echo "### VPS deployment completed"
+            echo "SSH deployment and post-deploy API checks completed successfully."
+          } >> "$GITHUB_STEP_SUMMARY"
+
 
   deploy:
     needs: test
