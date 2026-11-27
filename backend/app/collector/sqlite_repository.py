@@ -96,3 +96,26 @@ def list_source_observations(fingerprint: str | None = None, limit: int = 100):
         else:
             rows=db.execute("SELECT * FROM notice_source_observations ORDER BY last_seen DESC LIMIT ?",(limit,)).fetchall()
     return [dict(row) for row in rows]
+
+
+def source_disagreements(fingerprint: str):
+    """Summarize differing observed values across sources for selected notice fields."""
+    fields=("deadline","status","quantity","specification","document_url","estimated_price","procurement_method","payment_terms")
+    observations=list_source_observations(fingerprint=fingerprint,limit=500)
+    parsed=[]
+    for obs in observations:
+        try:
+            payload=json.loads(obs.get("observed_payload") or "{}")
+        except (TypeError, ValueError):
+            payload={}
+        parsed.append({"source_name":obs.get("source_name"),"source_url":obs.get("source_url"),"last_seen":obs.get("last_seen"),"payload":payload})
+    disagreements=[]
+    for field in fields:
+        values={}
+        for obs in parsed:
+            value=obs["payload"].get(field)
+            if value is not None and str(value).strip():
+                values.setdefault(str(value).strip(),[]).append({"source_name":obs["source_name"],"source_url":obs["source_url"],"last_seen":obs["last_seen"]})
+        if len(values)>1:
+            disagreements.append({"field":field,"values":[{"value":value,"sources":sources} for value,sources in values.items()]})
+    return {"fingerprint":fingerprint,"observation_count":len(parsed),"disagreements":disagreements}
