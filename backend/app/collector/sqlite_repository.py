@@ -75,7 +75,10 @@ def ingest(record: dict[str, Any]) -> dict[str, Any]:
                 elif any(term in haystack for term in ("zeyilname","amendment","ek doküman")):
                     event_type="amendment"
                 elif "deadline" in changed:
-                    event_type="deadline_change"
+                    old_deadline=str(old.get("deadline") or "")
+                    new_deadline=str(record.get("deadline") or "")
+                    # ISO-like values compare chronologically; otherwise keep generic.
+                    event_type="deadline_extension" if old_deadline and new_deadline and new_deadline > old_deadline else "deadline_change"
                 elif "specification" in changed:
                     event_type="specification_change"
                 elif "document_url" in changed:
