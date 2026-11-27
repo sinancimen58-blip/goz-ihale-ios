@@ -227,3 +227,17 @@ def test_ingest_classifies_deadline_extension(monkeypatch, tmp_path):
     repo.ingest(extended)
     events=repo.list_events(fingerprint=first['fingerprint'])
     assert events[0]['event_type']=='deadline_extension'
+
+
+def test_alert_candidate_deduplicates_repeated_identical_change(monkeypatch, tmp_path):
+    from app.collector import sqlite_repository as repo
+    monkeypatch.setattr(repo, 'DB_PATH', str(tmp_path / 'alerts.sqlite'))
+    base = {'title':'OCT cihazı alımı','institution':'Örnek Hastane','publication_date':'2026-11-27','source_name':'Kaynak','deadline':'2026-12-10'}
+    repo.ingest(base)
+    extended=dict(base,deadline='2026-12-20')
+    first=repo.ingest(extended)
+    assert first['alert']
+    repo.ingest(base)
+    repeated=repo.ingest(extended)
+    assert not repeated['alert']
+    assert 'bastırıldı' in repeated['alert_reason']
