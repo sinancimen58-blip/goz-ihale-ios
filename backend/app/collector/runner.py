@@ -57,7 +57,7 @@ def configured_adapters():
             except ValueError:
                 pass
         if source.key in html_keys:
-            page_url=os.getenv("GOZ_IHALE_HTML_PAGE_"+source.key.upper().replace("-","_"))
+            page_url=os.getenv("GOZ_IHALE_HTML_PAGE_"+source.key.upper().replace("-","_")) or source.url
             registered_host=urlparse(source.url).hostname
             if page_url and registered_host:
                 try:
