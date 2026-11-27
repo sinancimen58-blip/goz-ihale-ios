@@ -110,3 +110,27 @@ def test_scan_summary_endpoint_reports_catalog_state():
     assert "sources_with_runs" in payload
     assert "latest_status_counts" in payload
     assert "live_collection_configured" in payload
+
+
+def test_priority_notices_provides_stable_id_for_ios_model(monkeypatch):
+    sample={
+        "fingerprint":"abc123stable",
+        "title":"OCT cihazı alımı",
+        "institution":"Örnek Hastane",
+        "city":"Sivas",
+        "category":"OCT",
+        "deadline":None,
+        "source_name":"KHGM",
+        "source_url":"https://khgm.saglik.gov.tr/notice",
+        "summary":"Resmî ilan bağlantısı",
+        "status":"new",
+        "procurement_method":None,
+        "payment_terms":None,
+    }
+    monkeypatch.setattr("app.main.list_collected_notices",lambda limit:[sample])
+    response=client.get("/api/priority-notices")
+    assert response.status_code==200
+    row=response.json()[0]
+    assert row["id"]=="abc123stable"
+    assert all(key in row for key in ("title","institution","category","source_name","status","source_url"))
+    assert "days_remaining" in row and "urgency" in row
