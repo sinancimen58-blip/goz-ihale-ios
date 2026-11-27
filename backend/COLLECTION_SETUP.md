@@ -47,3 +47,11 @@ Configure the following only when the official portal offers a verified public f
 The workflow is scheduled for weekdays at 06:00 and 14:00 UTC (09:00 and 17:00 Turkey time, UTC+3), subject to GitHub scheduling delays. Add the two repository secrets to activate remote collection. Strict scheduling may be better handled on the server.
 
 The source catalog and discovery plans are metadata, not evidence that live collection is working. Mark sources live only after successful scan-ledger verification.
+
+## Additional hospital sources (probed)
+
+- `pau_hospital_purchase`: official Pamukkale University Hospital purchasing listing, `https://www.pau.edu.tr/ihale/tr`. Optional-source CI probe fetched 151 links but yielded no currently relevant ophthalmology notices; it is not a production-live claim.
+- `deu_hospital_purchase`: official Dokuz Eylül hospital purchasing page, `https://hastane2.deu.edu.tr/satin-alma/`. The latest optional-source probe failed; keep disabled until successful scan-ledger verification.
+- `khgm_supply`: separate KHGM procurement portal. The latest probe could not resolve/validate its host; keep disabled until it is reachable and verified.
+
+The live-source CI workflow probes these sources independently. Network/DNS failure on an optional source must not block the validated primary KHGM source.
