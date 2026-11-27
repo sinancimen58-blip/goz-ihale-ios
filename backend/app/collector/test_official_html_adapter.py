@@ -18,7 +18,7 @@ class OfficialHTMLParserTests(unittest.TestCase):
         parser=_Links()
         for i in range(350):
             parser.feed(f'<a href="/{i}">link {i}</a>')
-        self.assertLessEqual(len(parser.links,300)
+        self.assertLessEqual(len(parser.links),300)
 
 if __name__=="__main__":
     unittest.main()
