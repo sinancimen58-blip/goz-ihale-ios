@@ -37,8 +37,10 @@ jobs:
           from app.collector.runner import run_source
 
           result = run_source("khgm_central_notices")
-          metrics = result.get("metrics", {})
-          print(f"Live collector result: status={result.get('status')}, fetched={metrics.get('fetched_count', 0)}, relevant={metrics.get('relevant_count', 0)}, new={metrics.get('new_count', 0)}")
-          if result.get("status") not in {"success", "success_empty"} or metrics.get("fetched_count", 0) < 1:
+          fetched = result.get("fetched_count", 0)
+          relevant = result.get("relevant_count", 0)
+          new_count = result.get("new_count", 0)
+          print(f"Live collector result: status={result.get('status')}, fetched={fetched}, relevant={relevant}, new={new_count}")
+          if result.get("status") not in {"success", "success_empty"} or fetched < 1:
               raise SystemExit("Official source collection did not pass the live smoke test.")
           PY
