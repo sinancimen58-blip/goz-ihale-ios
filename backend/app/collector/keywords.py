@@ -6,7 +6,9 @@ KEYWORD_GROUPS = {
     "OCT": ["oct", "oct-a", "optik koherens tomografi", "optical coherence tomography", "retina duo", "glauvas", "spectral domain oct", "swept source oct"],
     "Fako": ["fako", "phaco", "fakoemülsifikasyon", "phacoemulsification", "phaco cihaz"],
     "Fako sarf": ["fako sarf", "phaco consumable", "fako ucu", "fako uç", "fako kaset", "phaco cassette", "phaco tip", "phaco pack"],
-    "Biyometri": ["optik biyometri", "optical biometry", "iol master", "al-scan", "aks uzunluğu", "axial length"],
+    "Biyometri": ["optik biyometri", "optical biometry", "iol master", "al-scan", "aks uzunluğu", "axial length", "biometri", "biyometri cihazı"],
+    "Pakimetri": ["pakimetri", "pachymetry", "pachymeter", "kornea kalınlık ölçümü", "corneal thickness"],
+    "IOL / Göz içi lens": ["iol", "göz içi lens", "intraoküler lens", "intraocular lens", "intraocular lenses", "göz içi mercek", "lens implant", "iç göz lens"],
     "Topografi": ["topografi", "kornea haritası", "corneal topography", "korneal topografi", "kornea tomografi", "pentacam", "scheimpflug"],
     "YAG / SLT": ["yag lazer", "slt lazer", "slt", "yag laser", "green laser", "532 nm laser"],
     "Fundus": ["fundus kamera", "fundus camera", "retinal kamera", "retinal imaging", "göz dibi kamera"],
@@ -16,7 +18,7 @@ KEYWORD_GROUPS = {
     "Refraksiyon": ["refraktometre", "keratometre", "autorefractor", "refractometer", "refraktokeratometre"],
     "Lensmetre": ["lensmetre", "lens meter", "lensmeter", "focimeter"],
     "Mikroperimetri": ["mikroperimetri", "microperimetry", "micro perimeter"],
-    "Yarık lamba": ["yarık lamba", "slit lamp", "biomicroscope"],
+    "Yarık lamba": ["yarık lamba", "slit lamp", "biomicroscope", "biomikroskop"],
     "Aberrometre": ["aberometre", "aberrometer", "wavefront"],
     "Muayene ünitesi": ["oftalmik muayene ünitesi", "ophthalmic examination unit", "göz muayene ünitesi"],
     "A-scan / B-scan": ["a scan", "a-scan", "b scan", "b-scan", "ultrasonik biyometri", "ocular ultrasound"],
@@ -25,8 +27,8 @@ KEYWORD_GROUPS = {
 
 def _normalize(text: str) -> str:
     text = unicodedata.normalize("NFKC", text or "").casefold()
-    text = re.sub(r"[^\\w]+", " ", text, flags=re.UNICODE)
-    return " " + re.sub(r"\\s+", " ", text).strip() + " "
+    text = re.sub(r"[^\w]+", " ", text, flags=re.UNICODE)
+    return " " + re.sub(r"\s+", " ", text).strip() + " "
 
 def _contains(normalized: str, term: str) -> bool:
     term_norm = _normalize(term)
