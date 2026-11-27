@@ -1,7 +1,21 @@
 """Source scan ledger with per-run metrics and outcome visibility."""
 import sqlite3, os
 from pathlib import Path
+from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
+
 DB_PATH=os.getenv("GOZ_IHALE_SCAN_DB", str(Path(__file__).resolve().parents[2] / "scan_runs.db"))
+
+_SENSITIVE_QUERY_KEYS={"token","key","secret","auth","password","signature","credential","access_token","api_key","apikey"}
+
+def safe_source_url(url: str | None) -> str | None:
+    """Redact sensitive query values before storing a configured source endpoint."""
+    if not url:
+        return url
+    parsed=urlparse(url)
+    query=[]
+    for key,value in parse_qsl(parsed.query,keep_blank_values=True):
+        query.append((key,"[redacted]" if key.casefold() in _SENSITIVE_QUERY_KEYS else value))
+    return urlunparse(parsed._replace(netloc=parsed.hostname or "",query=urlencode(query)))
 
 _METRIC_COLUMNS = {
     "fetched_count": "INTEGER NOT NULL DEFAULT 0",
@@ -29,7 +43,7 @@ def initialize():
             if name not in existing:
                 db.execute(f"ALTER TABLE scan_runs ADD COLUMN {name} {definition}")
 
-def record_run(source, status="not_implemented", message="No permitted live adapter configured.", notices_found=0, metrics=None):
+def record_run(source, status="not_implemented", message="No permitted live adapter configured.", notices_found=0, metrics=None, source_url=None):
     initialize()
     metrics=metrics or {}
     with connection() as db:
@@ -37,7 +51,7 @@ def record_run(source, status="not_implemented", message="No permitted live adap
             (source_key,source_name,source_url,status,message,notices_found,finished_at,
              fetched_count,relevant_count,new_count,updated_count,unchanged_count,alert_candidates,duration_ms,retry_count)
             VALUES (?,?,?,?,?,?,CURRENT_TIMESTAMP,?,?,?,?,?,?,?,?)""",
-            (source.key,source.name,source.url,status,message,notices_found,
+            (source.key,source.name,safe_source_url(source_url or source.url),status,message,notices_found,
              int(metrics.get("fetched_count",0)),int(metrics.get("relevant_count",notices_found)),
              int(metrics.get("new_count",0)),int(metrics.get("updated_count",0)),
              int(metrics.get("unchanged_count",0)),int(metrics.get("alert_candidates",0)),
