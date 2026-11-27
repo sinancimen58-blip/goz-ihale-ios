@@ -29,6 +29,14 @@ class OfficialHTMLParserTests(unittest.TestCase):
         self.assertEqual(parser.links[0][0],'/notice/1')
         self.assertIn('OCT',parser.links[0][1])
 
+    def test_listing_row_context_is_preserved_for_generic_detail_link(self):
+        parser=_Links()
+        parser.feed('<table><tr><td>18175</td><td>OCT Retina cihazı satın alımı</td><td>24.11.2026</td><td><a href="/Ihale/Detay/18175">Detay</a></td></tr></table>')
+        parser.close()
+        self.assertEqual(parser.links[0],('/Ihale/Detay/18175','Detay'))
+        self.assertIn('OCT Retina',parser.contexts[0])
+        self.assertIn('24.11.2026',parser.contexts[0])
+
     def test_url_guard_rejects_non_https_and_host_mismatch(self):
         with self.assertRaises(ValueError): _validate("http://example.gov.tr/list","example.gov.tr")
         with self.assertRaises(ValueError): _validate("https://other.gov.tr/list","example.gov.tr")
@@ -59,10 +67,22 @@ class OfficialHTMLParserTests(unittest.TestCase):
         self.assertEqual(parser.links[0][0],'/relative')
         self.assertEqual(parser.links[1][0],'https://example.gov.tr/absolute')
 
+    def test_collect_uses_row_context_for_dmo_style_detail_link(self):
+        html=('<table><tr><td>18175</td><td>OCT Retina cihazı satın alımı</td>'
+              '<td>24.11.2026</td><td><a href="/Ihale/Detay/18175">Detay</a></td></tr></table>').encode()
+        with patch("app.collector.official_html_adapter._validate", side_effect=lambda url, host: url), \
+             patch("app.collector.official_html_adapter.build_opener", return_value=_FakeOpener(html)):
+            adapter=OfficialHTMLAdapter("DMO","https://example.gov.tr/list","example.gov.tr")
+            candidates=adapter.collect()
+        self.assertEqual(len(candidates),1)
+        self.assertIn("OCT Retina",candidates[0].title)
+        self.assertIn("24.11.2026",candidates[0].description)
+        self.assertEqual(candidates[0].source_url,"https://example.gov.tr/Ihale/Detay/18175")
+
     def test_collect_deduplicates_repeated_notice_links(self):
         html=(
-            '<a href="/notice/1">OCT retina cihazı satın alımı</a>'
-            '<a href="/notice/1">OCT retina cihazı satın alımı tekrar</a>'
+            '<a href="/notice/1">OCT retina cihazı alımı</a>'
+            '<a href="/notice/1">OCT retina cihazı alımı tekrar</a>'
             '<a href="/notice/2">YAG lazer cihazı satın alımı</a>'
         ).encode()
         with patch("app.collector.official_html_adapter._validate", side_effect=lambda url, host: url), \
