@@ -60,33 +60,28 @@ jobs:
           DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
         run: |
           set -euo pipefail
-          # Trim accidental leading/trailing whitespace from secret values.
-          DEPLOY_HOST="$(printf '%s' "$DEPLOY_HOST" | xargs)"
-          DEPLOY_USER="$(printf '%s' "$DEPLOY_USER" | xargs)"
-          DEPLOY_PATH="$(printf '%s' "$DEPLOY_PATH" | xargs)"
-          SSH_KEY="$(printf '%s' "$SSH_KEY" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
-          KNOWN_HOSTS="$(printf '%s' "$KNOWN_HOSTS" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
-          DEPLOY_PORT="$(printf '%s' "${DEPLOY_PORT:-22}" | xargs)"
-          if [[ -z "${DEPLOY_HOST}" || -z "${DEPLOY_USER}" || -z "${DEPLOY_PATH}" || -z "${SSH_KEY}" || -z "${KNOWN_HOSTS}" ]]; then
+          trim() { printf '%s' "$1" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'; }
+          HOST="$(trim "$DEPLOY_HOST")"
+          USER="$(trim "$DEPLOY_USER")"
+          PATH_VALUE="$(trim "$DEPLOY_PATH")"
+          KEY="$(printf '%s' "$SSH_KEY" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          KH="$(printf '%s' "$KNOWN_HOSTS" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          PORT="$(trim "${DEPLOY_PORT:-22}")"
+          if [[ -z "$HOST" || -z "$USER" || -z "$PATH_VALUE" || -z "$KEY" || -z "$KH" ]]; then
             echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "Deployment secrets are not configured; deployment skipped."
-            {
-              echo "### VPS deployment skipped"
-              echo "Required deployment secrets are missing or empty. Backend tests passed, but no SSH connection or server update was attempted."
-              echo "Configure DEPLOY_HOST, DEPLOY_USER, DEPLOY_PATH, DEPLOY_SSH_KEY and DEPLOY_KNOWN_HOSTS (optional DEPLOY_PORT) in GitHub Actions secrets."
-            } >> "$GITHUB_STEP_SUMMARY"
+            echo "One or more required deployment secrets are empty."
             exit 0
           fi
-          if [[ ! "${DEPLOY_PATH}" =~ ^/[A-Za-z0-9._/-]+$ || ! "${DEPLOY_USER}" =~ ^[A-Za-z0-9._-]+$ || ! "${DEPLOY_PORT}" =~ ^[0-9]+$ ]]; then
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "Deployment path, user or port has an invalid format; deployment skipped."
-            exit 0
-          fi
-          echo "ready=true" >> "$GITHUB_OUTPUT"
+          if [[ ! "$PATH_VALUE" =~ ^/[A-Za-z0-9._/-]+$ ]]; then echo "Invalid DEPLOY_PATH format."; echo "ready=false" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if [[ ! "$USER" =~ ^[A-Za-z0-9._-]+$ ]]; then echo "Invalid DEPLOY_USER format."; echo "ready=false" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if [[ ! "$PORT" =~ ^[0-9]+$ ]] || (( PORT < 1 || PORT > 65535 )); then echo "Invalid DEPLOY_PORT format."; echo "ready=false" >> "$GITHUB_OUTPUT"; exit 0; fi
           {
-            echo "### VPS deployment prerequisites"
-            echo "Required deployment settings are present and format-checked. The SSH deployment step will run after tests."
-          } >> "$GITHUB_STEP_SUMMARY"
+            echo "host=$HOST"
+            echo "user=$USER"
+            echo "path=$PATH_VALUE"
+            echo "port=$PORT"
+          } >> "$GITHUB_OUTPUT"
+          echo "ready=true" >> "$GITHUB_OUTPUT"
 
       - name: Prepare SSH
         if: steps.check.outputs.ready == 'true'
@@ -104,10 +99,10 @@ jobs:
       - name: Deploy and verify API
         if: steps.check.outputs.ready == 'true'
         env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_HOST: ${{ steps.check.outputs.host }}
+          DEPLOY_USER: ${{ steps.check.outputs.user }}
+          DEPLOY_PATH: ${{ steps.check.outputs.path }}
+          DEPLOY_PORT: ${{ steps.check.outputs.port }}
         run: |
           set -euo pipefail
           PORT="${DEPLOY_PORT:-22}"
