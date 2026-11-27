@@ -1,0 +1,24 @@
+"""Unit tests for the official HTML adapter parser and URL guard."""
+import unittest
+from unittest.mock import patch
+from .official_html_adapter import _Links
+
+class OfficialHTMLParserTests(unittest.TestCase):
+    def test_extracts_anchor_text_and_href(self):
+        parser=_Links()
+        parser.feed('<a href="/notice/1">Optik OCT cihaz alımı</a><a href="/notice/2">YAG lazer</a>')
+        self.assertEqual(parser.links,[('/notice/1','Optik OCT cihaz alımı'),('/notice/2','YAG lazer')])
+
+    def test_ignores_empty_href(self):
+        parser=_Links()
+        parser.feed('<a>no link</a><a href="">empty</a>')
+        self.assertEqual(parser.links,[])
+
+    def test_link_limit(self):
+        parser=_Links()
+        for i in range(350):
+            parser.feed(f'<a href="/{i}">link {i}</a>')
+        self.assertLessEqual(len(parser.links,300)
+
+if __name__=="__main__":
+    unittest.main()
