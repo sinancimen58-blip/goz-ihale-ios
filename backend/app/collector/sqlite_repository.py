@@ -62,8 +62,12 @@ def list_notices(limit: int=100):
         rows=db.execute("SELECT * FROM collected_notices ORDER BY deadline IS NULL, deadline, last_seen DESC LIMIT ?",(max(1,min(limit,500)),)).fetchall()
     return [dict(row) for row in rows]
 
-def list_events(limit: int=100):
+def list_events(limit: int=100, fingerprint: str | None = None):
     initialize()
     with connection() as db:
-        rows=db.execute("SELECT * FROM collected_notice_events ORDER BY created_at DESC,id DESC LIMIT ?",(max(1,min(limit,500)),)).fetchall()
+        limit=max(1,min(limit,500))
+        if fingerprint:
+            rows=db.execute("SELECT * FROM collected_notice_events WHERE fingerprint=? ORDER BY created_at DESC,id DESC LIMIT ?",(fingerprint,limit)).fetchall()
+        else:
+            rows=db.execute("SELECT * FROM collected_notice_events ORDER BY created_at DESC,id DESC LIMIT ?",(limit,)).fetchall()
     return [dict(row) for row in rows]
