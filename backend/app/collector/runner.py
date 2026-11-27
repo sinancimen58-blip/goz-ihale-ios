@@ -62,7 +62,8 @@ def configured_adapters():
             if page_url and registered_host:
                 try:
                     adapters[source.key]=OfficialHTMLAdapter(source.name,page_url,registered_host)
-                except ValueError:
+                except (ValueError, OSError):
+                    # A DNS/host validation failure for one optional source must not disable all other collectors.
                     continue
     return adapters
 
