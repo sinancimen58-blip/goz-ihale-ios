@@ -59,3 +59,41 @@ def test_item_count_is_bounded():
     xml = ('<rss><channel>' + items + '</channel></rss>').encode()
     notices = parse_feed(xml, "Source", "https://example.org/feed")
     assert len(notices) == MAX_ITEMS
+
+
+from unittest.mock import patch
+from app.collector.rss_adapter import MAX_FEED_BYTES, MAX_ITEMS
+
+
+def test_feed_url_rejects_credentials_and_fragments():
+    for url in ("https://user:pass@example.org/feed", "https://example.org/feed#fragment"):
+        try:
+            _validate_feed_url(url)
+        except ValueError:
+            continue
+        assert False, f"Unsafe URL accepted: {url}"
+
+
+@patch("socket.getaddrinfo", return_value=[(2, 1, 6, "", ("127.0.0.1", 443))])
+def test_feed_url_rejects_private_dns_resolution(mocked_dns):
+    try:
+        _validate_feed_url("https://example.org/feed")
+    except ValueError:
+        pass
+    else:
+        assert False, "Private DNS result should be rejected"
+
+
+def test_feed_parser_rejects_oversized_input():
+    try:
+        parse_feed(b"x" * (MAX_FEED_BYTES + 1), "Feed", "https://example.org/feed")
+    except ValueError:
+        pass
+    else:
+        assert False, "Oversized feed should be rejected"
+
+
+def test_feed_parser_limits_item_count():
+    payload = ("<rss><channel>" + "".join(f"<item><title>Notice {i}</title></item>" for i in range(MAX_ITEMS + 5)) + "</channel></rss>").encode()
+    notices = parse_feed(payload, "Feed", "https://example.org/feed")
+    assert len(notices) == MAX_ITEMS
