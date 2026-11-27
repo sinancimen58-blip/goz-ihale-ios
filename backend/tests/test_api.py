@@ -73,7 +73,7 @@ def test_source_catalog_api_is_safe_and_read_only():
     assert response.status_code == 200
     rows = response.json()
     assert rows
-    assert all("feed_configured" in row and "adapter_ready" in row for row in rows)
+    assert all("feed_configured" in row and "html_configured" in row and "page_configured" in row and "adapter_ready" in row for row in rows)
 
 
 def test_scan_catalog_requires_token_and_does_not_claim_live_collection():
