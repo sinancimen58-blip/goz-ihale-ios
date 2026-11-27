@@ -30,7 +30,7 @@ def _normalize(text: str) -> str:
 
 def _contains(normalized: str, term: str) -> bool:
     term_norm = _normalize(term)
-    return term_norm.strip() in normalized.strip()
+    return term_norm in normalized
 
 ALL_KEYWORDS = sorted({term for terms in KEYWORD_GROUPS.values() for term in terms})
 
