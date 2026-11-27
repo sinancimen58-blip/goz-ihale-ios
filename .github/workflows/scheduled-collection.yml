@@ -1,17 +1,33 @@
 name: Scheduled source collection
+
 on:
+  schedule:
+    - cron: "0 6,14 * * 1-5"
   workflow_dispatch:
-    inputs:
-      note:
-        description: "Manual test only; scheduled collection will be enabled after HTTPS is configured"
-        required: false
-        type: string
+
 jobs:
   collect:
     runs-on: ubuntu-latest
     steps:
-      - name: Safety gate
+      - name: Verify HTTPS and run enabled sources
+        env:
+          API_URL: ${{ secrets.GOZ_IHALE_API_URL }}
+          API_TOKEN: ${{ secrets.GOZ_IHALE_API_TOKEN }}
         run: |
-          echo "Collection trigger intentionally paused until API HTTPS is configured."
-          echo "Do not transmit API write tokens over plain HTTP."
-          exit 1
+          set -euo pipefail
+          if [ -z "${API_URL}" ] || [ -z "${API_TOKEN}" ]; then
+            echo "API URL/token secrets not configured; collection skipped."
+            exit 0
+          fi
+          case "${API_URL}" in
+            https://*) ;;
+            *) echo "API URL must use HTTPS; refusing to send token." >&2; exit 1 ;;
+          esac
+          BASE="${API_URL%/}"
+          curl --fail --silent --show-error --max-time 30 "${BASE}/" | jq -e '.name == "GozIhale API"' >/dev/null
+          RESULT=$(curl --fail --silent --show-error --max-time 90 \
+            -X POST "${BASE}/api/run-enabled-sources" \
+            -H "X-Goz-Ihale-Token: ${API_TOKEN}" \
+            -H "Content-Type: application/json")
+          echo "${RESULT}" | jq -e '.count > 0 and (.results | length == .count) and all(.results[]; .status == "success" or .status == "success_empty")'
+          echo "Collection run completed; source statuses were validated."
