@@ -24,6 +24,7 @@ class OfficialHTMLParserTests(unittest.TestCase):
     def test_parser_handles_malformed_html_and_nested_text(self):
         parser=_Links()
         parser.feed('<a href="/notice/1"><b>OCT</b> cihaz alımı')
+        parser.close()
         self.assertEqual(len(parser.links),1)
         self.assertEqual(parser.links[0][0],'/notice/1')
         self.assertIn('OCT',parser.links[0][1])
