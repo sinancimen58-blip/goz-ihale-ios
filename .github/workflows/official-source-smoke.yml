@@ -10,12 +10,12 @@ on:
       - ".github/workflows/official-source-smoke.yml"
   workflow_dispatch:
   schedule:
-    - cron: "20 6 * * 1-5"
+    - cron: "20 6,14 * * 1-5"
 
 jobs:
-  khgm:
+  official-sources:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -23,14 +23,16 @@ jobs:
           python-version: "3.11"
       - name: Install backend dependencies
         run: pip install -r backend/requirements.txt
-      - name: Fetch and screen official KHGM listing
+      - name: Probe two required official sources and optional sources
         env:
           PYTHONPATH: backend
         run: |
           python - <<'PY'
           import os, tempfile
+          from datetime import datetime, timezone
+
           temp = tempfile.mkdtemp(prefix="gozihale-smoke-")
-          source_keys = "khgm_central_notices,khgm_supply,deu_hospital_purchase,pau_hospital_purchase,ekap,dmo"
+          source_keys = "khgm_central_notices,dmo,khgm_supply,deu_hospital_purchase,pau_hospital_purchase,ekap"
           os.environ["GOZ_IHALE_ENABLED_SOURCE_KEYS"] = source_keys
           os.environ["GOZ_IHALE_HTML_SOURCE_KEYS"] = source_keys
           os.environ["GOZ_IHALE_HTML_PAGE_KHGM_CENTRAL_NOTICES"] = "https://khgm.saglik.gov.tr/TR-119527/ihale-duyurulari.html"
@@ -41,19 +43,41 @@ jobs:
           os.environ["GOZ_IHALE_HTML_PAGE_DMO"] = "https://www.dmo.gov.tr/Ihale/Liste?type=1"
           os.environ["GOZ_IHALE_INGEST_DB"] = os.path.join(temp, "ingestion.db")
           os.environ["GOZ_IHALE_SCAN_DB"] = os.path.join(temp, "scan.db")
+
           from app.collector.runner import run_source
 
-          primary = run_source("khgm_central_notices")
-          fetched = primary.get("fetched_count", 0)
-          relevant = primary.get("relevant_count", 0)
-          new_count = primary.get("new_count", 0)
-          print(f"Live collector result [khgm_central_notices]: status={primary.get('status')}, fetched={fetched}, relevant={relevant}, new={new_count}")
-          if primary.get("status") not in {"success", "success_empty"} or fetched < 1:
-              raise SystemExit("Primary official source collection failed smoke test.")
+          rows = []
+          required = ("khgm_central_notices", "dmo")
+          optional = ("khgm_supply", "deu_hospital_purchase", "pau_hospital_purchase", "ekap")
+          for key in required + optional:
+              result = run_source(key)
+              row = {
+                  "key": key,
+                  "status": result.get("status", "unknown"),
+                  "fetched": int(result.get("fetched_count", 0)),
+                  "relevant": int(result.get("relevant_count", result.get("notices_found", 0))),
+                  "new": int(result.get("new_count", 0)),
+                  "updated": int(result.get("updated_count", 0)),
+                  "unchanged": int(result.get("unchanged_count", 0)),
+              }
+              rows.append(row)
+              print(f"Source {key}: status={row['status']}, fetched={row['fetched']}, relevant={row['relevant']}, new={row['new']}")
+              if key in required and (row["status"] not in {"success", "success_empty"} or row["fetched"] < 1):
+                  print(f"Required source probe failed: {key}")
+                  break
 
-          # Additional official portals are probed independently; temporary DNS/network
-          # outages must not invalidate the verified primary source.
-          for source_key in ("khgm_supply", "deu_hospital_purchase", "pau_hospital_purchase", "ekap", "dmo"):
-              secondary = run_source(source_key)
-              print(f"Optional source result [{source_key}]: status={secondary.get('status')}, fetched={secondary.get('fetched_count', 0)}, relevant={secondary.get('relevant_count', 0)}")
+          summary = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary:
+              with open(summary, "a", encoding="utf-8") as stream:
+                  stream.write("### Official-source smoke results\n\n")
+                  stream.write(f"Probe date: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}\n\n")
+                  stream.write("| Source | Status | Fetched | Relevant | New | Updated | Unchanged |\n")
+                  stream.write("|---|---|---:|---:|---:|---:|---:|\n")
+                  for row in rows:
+                      stream.write(f"| {row['key']} | {row['status']} | {row['fetched']} | {row['relevant']} | {row['new']} | {row['updated']} | {row['unchanged']} |\n")
+
+          for key in required:
+              row = next((item for item in rows if item["key"] == key), None)
+              if row is None or row["status"] not in {"success", "success_empty"} or row["fetched"] < 1:
+                  raise SystemExit(f"Required live source smoke failed: {key}")
           PY

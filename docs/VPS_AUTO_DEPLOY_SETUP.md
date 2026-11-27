@@ -26,3 +26,10 @@ The account needs permission to fast-forward the `main` checkout and run Docker 
 - The workflow does not configure HTTPS, DNS, reverse-proxy access, iOS signing or push credentials.
 
 Workflow file: `.github/workflows/deploy-vps.yml`.
+
+
+## Public-key bootstrap note
+
+When a key pair is generated on the VPS, copy only the **public** key (the file ending in `.pub`) into the selected account's `authorized_keys`. Keep the private key on the VPS until it is securely copied into the GitHub Actions secret `DEPLOY_SSH_KEY`; never send it in chat or commit it. `DEPLOY_USER` must match the account that accepts the public key, and `DEPLOY_PATH` must be the existing repository checkout.
+
+The workflow's run summary explicitly distinguishes a successful test run from a skipped remote deployment. A green CI result alone does not mean the VPS was updated.

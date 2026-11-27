@@ -63,6 +63,11 @@ jobs:
           if [[ -z "${DEPLOY_HOST}" || -z "${DEPLOY_USER}" || -z "${DEPLOY_PATH}" || -z "${SSH_KEY}" || -z "${KNOWN_HOSTS}" ]]; then
             echo "ready=false" >> "$GITHUB_OUTPUT"
             echo "Deployment secrets are not configured; deployment skipped."
+            {
+              echo "### VPS deployment skipped"
+              echo "Required deployment secrets are missing or empty. Backend tests passed, but no SSH connection or server update was attempted."
+              echo "Configure DEPLOY_HOST, DEPLOY_USER, DEPLOY_PATH, DEPLOY_SSH_KEY and DEPLOY_KNOWN_HOSTS (optional DEPLOY_PORT) in GitHub Actions secrets."
+            } >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           if [[ ! "${DEPLOY_PATH}" =~ ^/[A-Za-z0-9._/-]+$ || ! "${DEPLOY_USER}" =~ ^[A-Za-z0-9._-]+$ || ! "${DEPLOY_PORT:-22}" =~ ^[0-9]+$ ]]; then
@@ -71,6 +76,10 @@ jobs:
             exit 0
           fi
           echo "ready=true" >> "$GITHUB_OUTPUT"
+          {
+            echo "### VPS deployment prerequisites"
+            echo "Required deployment settings are present and format-checked. The SSH deployment step will run after tests."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Prepare SSH
         if: steps.check.outputs.ready == 'true'
@@ -97,3 +106,7 @@ jobs:
           PORT="${DEPLOY_PORT:-22}"
           REMOTE_COMMAND="set -euo pipefail; cd ${DEPLOY_PATH}; git pull --ff-only origin main; cd backend; if [ \$(id -u) -eq 0 ]; then bash scripts/enable_live_collection.sh || scan_exit=\$?; else sudo -n bash scripts/enable_live_collection.sh || scan_exit=\$?; fi; docker compose ps; curl -fsS --retry 10 --retry-connrefused --retry-delay 2 http://127.0.0.1:8000/api/health; curl -fsS http://127.0.0.1:8000/api/scan-summary; if [ \${scan_exit:-0} -ne 0 ]; then exit \${scan_exit}; fi
           ssh -p "$PORT" -o StrictHostKeyChecking=yes -o BatchMode=yes "${DEPLOY_USER}@${DEPLOY_HOST}" "$REMOTE_COMMAND"
+          {
+            echo "### VPS deployment completed"
+            echo "SSH deployment and post-deploy API checks completed successfully."
+          } >> "$GITHUB_STEP_SUMMARY"

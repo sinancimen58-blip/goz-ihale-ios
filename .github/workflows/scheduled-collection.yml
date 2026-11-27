@@ -17,6 +17,10 @@ jobs:
           set -euo pipefail
           if [ -z "${API_URL}" ] || [ -z "${API_TOKEN}" ]; then
             echo "API URL/token secrets not configured; collection skipped."
+            {
+              echo "### Scheduled collection skipped"
+              echo "GOZ_IHALE_API_URL and GOZ_IHALE_API_TOKEN must be configured. No API request was made."
+            } >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           case "${API_URL}" in
