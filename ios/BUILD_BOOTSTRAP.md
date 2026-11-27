@@ -1,16 +1,17 @@
-# iOS Build Bootstrap
-
-The repository's SwiftUI source is not yet packaged as an Xcode project. This document records the next build-enablement work.
+# iOS Build and Distribution Status
 
 ## Current files
+- `ios/GozIhale.xcodeproj`: native Xcode project is present.
 - `ios/GozIhale/GozIhaleApp.swift`
 - `ios/GozIhale/ContentView.swift`
+- `.github/workflows/ios-build.yml`: simulator build workflow.
 
 ## Build path
-- Create a native Xcode project (`.xcodeproj`) referencing these source files.
-- Set deployment target conservatively and test on a simulator.
-- Add a macOS GitHub Actions runner workflow using Xcode build and simulator tests.
-- Before device distribution: configure signing and TestFlight with the developer account owner.
+- Build the simulator target with the repository's iOS CI workflow.
+- The prototype uses HTTPS-only API configuration in Settings; an empty server address is intentionally not defaulted to localhost.
+- Set the deployed API base URL (for example, `https://api.example.com`) after the server is deployed.
 
-## Important
-No signed IPA or installation build is available yet. Do not treat the prototype/demo login as real authentication. The demo gate is solely a UI placeholder.
+## Distribution
+- The simulator build is not a signed device IPA.
+- Device distribution requires Apple Developer signing credentials and TestFlight provisioning.
+- Demo login remains a UI placeholder and is not real authentication.
