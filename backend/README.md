@@ -14,8 +14,10 @@ SQLite files are created automatically or configured via environment variables. 
 ## Live-source validation status
 
 - **KHGM central notice listing:** validated in GitHub Actions using the official public listing; the latest successful test fetched 185 links, screened 1 relevant notice and persisted 1 new notice in a temporary test database. This is CI validation, not a deployed continuous service.
-- **Pamukkale University Hospital procurement listing:** public HTML collection succeeded in an optional-source probe (151 links); the current page produced no ophthalmology-relevant candidates at that test.
-- **KHGM Supply portal / DEU Hospital purchase:** probes currently report configuration/network failures in the test runner and are not marked live.
+- **Pamukkale University Hospital procurement listing:** public HTML collection succeeded in the optional-source probe (151 links); that run produced no ophthalmology-relevant candidates.
+- **DMO published tender listing:** public HTML collection succeeded (33 links); that run produced no ophthalmology-relevant candidates. The source remains opt-in.
+- **EKAP bulletin listing:** the current runner probe failed; keep it disabled until a successful probe.
+- **KHGM Supply portal / DEU Hospital purchase:** current probes report adapter/network failures; keep disabled.
 - Source collection remains opt-in. Configure and verify sources on a server before enabling scheduled production collection.
 
 ## Configuration
