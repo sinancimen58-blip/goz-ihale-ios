@@ -11,4 +11,4 @@ TERMS=[
 "göz cerrahisi sarf", "göz hastalıkları cihaz", "glokom", "glaucoma", "RNFL", "ganglion cell analysis", "vitrektomi sarf", "retina cerrahisi sarf", "katarakt cerrahi sarf"
 ]
 def build_source_query_plan():
-    return [{"term":term,"source_targets":["EKAP","ilan.gov.tr","DMO","Resmî Gazete","KİK"],"verification":"original_notice_required"} for term in TERMS]
+    return [{"term":term,"source_targets":["EKAP","ilan.gov.tr","DMO","Resmî Gazete","KİK","KHGM Merkezi Satın Alma","USHAŞ","Türk Kızılay","Kızılay Lojistik","TİKA","Cumhurbaşkanlığı Destek Hizmetleri","TDT","TÜRKSOY","TÜRKPA","Türk Akademisi","Türk Yatırım Fonu","İl Sağlık Müdürlükleri","Büyükşehir Belediyeleri","Üniversite Hastaneleri","Şehir Hastaneleri"],"verification":"original_notice_required"} for term in TERMS]
