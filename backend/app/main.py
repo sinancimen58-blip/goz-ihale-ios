@@ -79,9 +79,9 @@ def collected_notices(limit: int = 100):
     return list_collected_notices(limit)
 
 @app.get("/api/collection-events", tags=["collection"])
-def collection_events(limit: int = 100):
+def collection_events(limit: int = 100, fingerprint: str | None = None):
     """List new/updated notice ingestion events."""
-    return list_ingestion_events(limit)
+    return list_ingestion_events(limit, fingerprint)
 
 @app.post("/api/collect/record", tags=["collection"])
 def record_collected_notice(payload: dict, x_goz_ihale_token: str|None=Header(default=None)):
