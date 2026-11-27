@@ -23,7 +23,7 @@
 </div><div class="bar"><span id="progress"></span></div><p class="small" id="progressText">Repo/CI kanıtı doğrulandıkça güncellenecek. Bu oran canlı deploy tamamlanma yüzdesi değildir.</p></section>
 <section class="card"><h2>Son GitHub çalışmaları</h2><div id="runs" class="list">Yükleniyor…</div></section></div>
 <section class="card" style="margin-top:14px"><h2>Son commitler</h2><div id="commits" class="list">Yükleniyor…</div></section>
-<footer>Bu panel GitHub'ın herkese açık API'sinden verileri alır. Kaynak smoke-test geçici CI veritabanında çalışır; üretim sunucusunda sürekli toplama anlamına gelmez. VPS veya ilan verisi doğrulanmadan canlı başarı gösterilmez. Otomatik yenileme: 30 saniye.</footer>
+<footer>Bu panel GitHub'ın herkese açık API'sinden verileri alır. Kaynak smoke-test geçici CI veritabanında çalışır; üretim sunucusunda sürekli toplama anlamına gelmez. VPS veya ilan verisi doğrulanmadan canlı başarı gösterilmez. Otomatik yenileme: 120 saniye.</footer>
 </main><script>
 const owner="sinancimen58-blip",repo="goz-ihale-ios",base="https://api.github.com/repos/"+owner+"/"+repo;
 async function get(path){let r=await fetch(base+path,{headers:{"Accept":"application/vnd.github+json"}});if(!r.ok)throw Error(r.status+" "+path);return r.json()}
@@ -33,12 +33,12 @@ function label(run){if(!run)return"—";let status=run.status==="completed"?run.
 function stage(id,state,note){const el=document.getElementById(id);el.className="stage "+state;el.querySelector("p").textContent=note}
 function stateFor(run){if(!run)return"pending";if(run.status==="completed")return run.conclusion==="success"?"done":"blocked";return"active"}
 async function refresh(){document.getElementById("updated").textContent="Güncelleniyor…";
-try{const [commits,runs]=await Promise.all([get("/commits?per_page=5"),get("/actions/runs?per_page=30")]);
+try{const [commits,runs]=await Promise.all([get("/commits?per_page=5"),get("/actions/runs?per_page=100")]);
 const latest=commits[0],w=runs.workflow_runs||[];
 document.getElementById("sha").innerHTML='<a style="color:var(--blue)" href="'+latest.html_url+'">'+latest.sha.slice(0,7)+'</a>';document.getElementById("commitTime").textContent=date(latest.commit.author.date);
 const b=w.find(x=>x.path&&x.path.includes("backend-tests.yml")),src=w.find(x=>x.name.includes("Official source live smoke test")),m=w.find(x=>x.name.includes("Autonomous Repository Maintenance")),ios=w.find(x=>x.name.includes("iOS Prototype Build")),deployRun=w.find(x=>x.name==="Deploy VPS");
 document.getElementById("ci").textContent=label(b);document.getElementById("ciInfo").textContent=b?date(b.updated_at):"CI çalışması bulunamadı";
-document.getElementById("source").textContent=label(src);document.getElementById("sourceInfo").textContent=src?date(src.updated_at):"Henüz kaynak smoke-test bulunamadı";
+document.getElementById("source").textContent=label(src);document.getElementById("sourceInfo").innerHTML=src?'<a href="'+src.html_url+'">Run · '+date(src.updated_at)+'</a>':"Henüz kaynak smoke-test bulunamadı";
 document.getElementById("maintenance").textContent=label(m);document.getElementById("maintenanceInfo").textContent=m?date(m.updated_at):"—";
 stage("s1",stateFor(src),src?(src.conclusion==="success"&&src.status==="completed"?"KHGM + DMO probe workflow başarılı (CI; geçici DB). "+date(src.updated_at):"Kaynak probe: "+label(src)+" · "+date(src.updated_at)):"Kaynak probe henüz bulunamadı.");
 const backendState=stateFor(b),backendNote=b?(b.conclusion==="success"&&b.status==="completed"?"Backend testleri geçti; bu repo/CI kanıtıdır, production run değildir. "+date(b.updated_at):"Backend CI: "+label(b)+" · "+date(b.updated_at)):"Backend test çalışması bulunamadı.";
@@ -51,5 +51,5 @@ document.getElementById("runs").innerHTML=w.slice(0,8).map(x=>'<div class="item"
 document.getElementById("commits").innerHTML=commits.map(x=>'<div class="item"><a href="'+x.html_url+'"><b>'+x.sha.slice(0,7)+'</b> · '+esc(x.commit.message.split("\n")[0])+'</a><br><span class="small muted">'+esc(x.commit.author.name)+' · '+date(x.commit.author.date)+'</span></div>').join("");
 }catch(e){document.getElementById("updated").textContent="GitHub API erişim hatası";document.getElementById("runs").textContent=e.toString()}
 document.getElementById("updated").textContent="Son yenileme: "+new Date().toLocaleTimeString("tr-TR");}
-refresh();setInterval(refresh,30000);
+refresh();setInterval(refresh,120000);
 </script></body></html>
