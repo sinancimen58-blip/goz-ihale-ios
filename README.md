@@ -24,3 +24,8 @@ The official KHGM listing has a live smoke test in GitHub Actions that fetches, 
 
 ## Collection schedule
 A HTTPS-gated weekday GitHub Actions workflow is prepared. It remains inactive for remote collection until `GOZ_IHALE_API_URL` and `GOZ_IHALE_API_TOKEN` repository secrets are configured and the server is deployed over HTTPS.
+
+## Latest reliability improvement (2026-11-27)
+- Source collection now retries transient DNS lookup failures in addition to transient HTTP/transport errors.
+- Retry behavior is covered by automated tests; a retry succeeding is not itself proof that an official source has returned relevant notices.
+- Deployment gate: configure HTTPS API URL/token secrets, deploy to a persistent VPS, then verify collection ledger, `/api/priority-notices`, and notification delivery on the deployed instance before enabling scheduled remote scans.
