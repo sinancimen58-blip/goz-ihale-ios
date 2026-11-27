@@ -1,6 +1,13 @@
 name: Official source live smoke test
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/app/collector/official_html_adapter.py"
+      - "backend/app/collector/filtering.py"
+      - "backend/app/collector/keywords.py"
+      - ".github/workflows/official-source-smoke.yml"
   workflow_dispatch:
   schedule:
     - cron: "20 6 * * 1-5"
