@@ -26,6 +26,10 @@ jobs:
         env:
           PYTHONPATH: .
         run: pytest -q
+      - name: Validate operational scripts
+        run: |
+          python -m compileall -q app scripts
+          bash -n scripts/enable_live_collection.sh
       - name: Validate Docker Compose configuration
         run: cp .env.example .env && docker compose config --quiet
       - name: Build backend container
