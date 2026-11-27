@@ -1,5 +1,26 @@
 # Gözİhale
 
-Türkiye Ophthalmology Tender Intelligence iOS app.
+Ophthalmology procurement notice intelligence: source discovery, filtering, deduplication, persistence, API and iOS prototype.
 
-Project initialization test.
+## Current sprint
+- 72-hour MVP execution target; milestones are verified, not assumed.
+- First official source integration: KHGM Central Purchasing notice list (HTTPS HTML adapter).
+- Source registry and collection API; SQLite ingestion and scan ledger.
+- iOS prototype loads `/api/priority-notices` from a configurable API URL.
+- Live collector is not yet deployed to a persistent public server.
+
+## Start here
+- [72-hour MVP runbook](docs/MVP_72H_RUNBOOK.md)
+- [Collection setup](backend/COLLECTION_SETUP.md)
+- [Docker setup](backend/DOCKER_SETUP.md)
+- [Security checklist](backend/VPS_SECURITY_CHECKLIST.md)
+- [iOS bootstrap](ios/BUILD_BOOTSTRAP.md)
+
+## Local backend
+See `backend/README.md` and `backend/DOCKER_SETUP.md`. Configure source keys and source adapters explicitly. Never commit tokens. The API write endpoints require a server-side token.
+
+## Live source verification
+The official KHGM listing has a live smoke test in GitHub Actions that fetches, screens, and persists source results in an ephemeral test database. The daily smoke test does not represent production deployment or continuous collection. See [workflow](.github/workflows/official-source-smoke.yml).
+
+## Collection schedule
+A HTTPS-gated weekday GitHub Actions workflow is prepared. It remains inactive for remote collection until `GOZ_IHALE_API_URL` and `GOZ_IHALE_API_TOKEN` repository secrets are configured and the server is deployed over HTTPS.
