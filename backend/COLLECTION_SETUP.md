@@ -1,6 +1,6 @@
 # GozIhale public-feed collection configuration
 
-The RSS/Atom adapter is intentionally allowlisted, HTTPS-only, redirect-blocking and rejects non-public DNS addresses.
+The RSS/Atom adapter is intentionally allowlisted, HTTPS-only, redirect-blocking and rejects non-public DNS addresses. Feed downloads are bounded to 2 MB and parsing to 500 entries; descriptions are truncated. URL fragments, credentials and excessive URL length are rejected. These controls are defense-in-depth, not a substitute for connection-time IP pinning and server isolation.
 
 ## Server configuration
 Configure these environment variables on the VPS (never commit tokens or private feed URLs):
