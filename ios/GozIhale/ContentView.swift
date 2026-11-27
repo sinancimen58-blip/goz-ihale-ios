@@ -22,12 +22,24 @@ final class TenderViewModel: ObservableObject {
     @Published var tenders: [Tender] = []
     @Published var loading = false
     @Published var errorMessage: String?
-    @Published var serverURL: String = UserDefaults.standard.string(forKey: "gozihale_server") ?? "http://127.0.0.1:8000"
+    @Published var serverURL: String = UserDefaults.standard.string(forKey: "gozihale_server") ?? ""
     @Published var favorites: Set<String> = Set(UserDefaults.standard.stringArray(forKey: "gozihale_favorites") ?? [])
 
     func load() async {
-        guard let base = URL(string: serverURL.trimmingCharacters(in: .whitespacesAndNewlines)) else {
-            errorMessage = "Sunucu adresi geçersiz."; return
+        let trimmedServerURL = serverURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedServerURL.isEmpty else {
+            errorMessage = "Önce Ayarlar bölümünden HTTPS API adresini girin."
+            return
+        }
+        guard let base = URL(string: trimmedServerURL),
+              base.scheme?.lowercased() == "https",
+              base.host != nil,
+              base.user == nil,
+              base.password == nil,
+              base.query == nil,
+              base.fragment == nil else {
+            errorMessage = "Geçerli, kullanıcı bilgisi içermeyen HTTPS sunucu adresi girin."
+            return
         }
         loading = true; errorMessage = nil
         defer { loading = false }
@@ -37,7 +49,7 @@ final class TenderViewModel: ObservableObject {
             guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.badServerResponse) }
             tenders = try JSONDecoder().decode([Tender].self, from: data)
         } catch {
-            errorMessage = "Sunucuya bağlanılamadı. Adresi ve sunucunun çalıştığını kontrol edin."
+            errorMessage = "HTTPS API erişilemedi veya yanıt biçimi uyumsuz. Sunucu adresini ve API durumunu kontrol edin."
         }
     }
     func saveServer() { UserDefaults.standard.set(serverURL, forKey: "gozihale_server") }
@@ -121,7 +133,7 @@ struct ContentView: View {
                     Section("API bağlantısı") {
                         TextField("Sunucu URL", text: $model.serverURL)
                             .textInputAutocapitalization(.never).autocorrectionDisabled()
-                        Text("Örnek: http://192.168.1.20:8000").font(.footnote).foregroundStyle(.secondary)
+                        Text("Örnek: https://api.ornek.com — HTTP adresleri kabul edilmez.").font(.footnote).foregroundStyle(.secondary)
                         Button("Adresi kaydet ve bağlan") { model.saveServer(); Task { await model.load() } }
                         Button("Bağlantıyı test et") { Task { await model.load() } }
                     }
