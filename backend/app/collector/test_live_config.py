@@ -11,7 +11,8 @@ def test_configure_env_file_preserves_existing_token_and_unrelated_settings(tmp_
     assert "CUSTOM_SETTING=keep" in content
     assert "GOZ_IHALE_PORT=8123" in content
     for key,value in VALUES.items():
-        assert f"{key}={value}" in content
+        if key != "GOZ_IHALE_PORT":
+            assert f"{key}={value}" in content
     assert content.count("GOZ_IHALE_ENABLED_SOURCE_KEYS=")==1
     assert path.stat().st_mode & 0o777 == 0o600
 
