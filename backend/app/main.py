@@ -189,3 +189,12 @@ from .collector.specification_review import analyze_specification
 def specification_review(text: str):
     """Heuristic review flags for human assessment of specification text."""
     return analyze_specification(text)
+
+
+@app.post("/api/run-enabled-sources", tags=["collection"])
+def run_enabled_collection(x_goz_ihale_token: str|None=Header(default=None)):
+    """Run all explicitly enabled RSS adapters. Requires server-side feed configuration."""
+    require_write_token(x_goz_ihale_token)
+    from .collector.runner import run_enabled_sources
+    results=run_enabled_sources()
+    return {"live_collection":True,"count":len(results),"results":results}
