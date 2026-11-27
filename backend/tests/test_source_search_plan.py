@@ -11,4 +11,9 @@ def test_all_plan_items_require_verification():
     plan=build_source_query_plan()
     assert plan
     assert all(row["verification"]=="original_notice_required" for row in plan)
-\n\ndef test_query_plan_targets_added_procurement_entities():\n    plan=build_source_query_plan()\n    targets={target for row in plan for target in row["source_targets"]}\n    assert {"USHAŞ", "Türk Kızılay", "TİKA", "KHGM Merkezi Satın Alma", "İl Sağlık Müdürlükleri"} <= targets\n
+
+
+def test_query_plan_targets_added_procurement_entities():
+    plan=build_source_query_plan()
+    targets={target for row in plan for target in row["source_targets"]}
+    assert {"USHAŞ", "Türk Kızılay", "TİKA", "KHGM Merkezi Satın Alma", "İl Sağlık Müdürlükleri"} <= targets
