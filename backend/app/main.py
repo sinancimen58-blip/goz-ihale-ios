@@ -238,3 +238,17 @@ def run_enabled_collection(x_goz_ihale_token: str|None=Header(default=None)):
 def source_disagreements(fingerprint: str):
     """Expose conflicting values observed across sources for a consolidated notice."""
     return compare_sources(fingerprint)
+
+from .collector.institution_targets import build_institution_search_plan, UNIVERSITY_HOSPITAL_TARGETS, CITY_HOSPITAL_TARGETS
+
+@app.get("/api/institution-search-plan", tags=["collection"])
+def institution_search_plan(institution: str | None = None):
+    """Institution-specific university/city hospital query plan; no live searches are performed."""
+    targets=UNIVERSITY_HOSPITAL_TARGETS + CITY_HOSPITAL_TARGETS
+    if institution:
+        matches=[item for item in targets if institution.casefold() in item.casefold()]
+        if not matches:
+            raise HTTPException(404, "Institution target not found")
+        targets=matches
+    plans=build_institution_search_plan(targets)
+    return {"count":len(plans),"plans":plans,"live_search":False}
