@@ -16,6 +16,7 @@ SOURCES = [
     SourceDefinition("ekap", "EKAP", "national", "https://ekap.kik.gov.tr/", notes="Official public procurement platform"),
     SourceDefinition("kik", "Kamu İhale Kurumu", "national", "https://www.ihale.gov.tr/", notes="KİK official information portal"),
     SourceDefinition("dmo", "Devlet Malzeme Ofisi", "national", "https://www.dmo.gov.tr/", notes="Catalogue and procurement notices"),
+    SourceDefinition("khgm_central", "Sağlık Bakanlığı Kamu Hastaneleri Genel Müdürlüğü", "agency", "https://khgm.saglik.gov.tr/", notes="Central procurement and hospital purchasing announcements; endpoint review pending"),
     SourceDefinition("ilan", "ilan.gov.tr", "national", "https://www.ilan.gov.tr/", notes="Public notice discovery"),
     SourceDefinition("resmigazete", "Resmî Gazete", "national", "https://www.resmigazete.gov.tr/", notes="Legal and institutional notices"),
     SourceDefinition("gtb", "Ticaret Bakanlığı GTB e-İhale", "agency", "https://www.turkiye.gov.tr/gtb-e-ihale", notes="Access/terms review required"),
