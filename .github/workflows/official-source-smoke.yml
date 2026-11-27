@@ -29,10 +29,13 @@ jobs:
           python - <<'PY'
           import os, tempfile
           temp = tempfile.mkdtemp(prefix="gozihale-smoke-")
-          os.environ["GOZ_IHALE_ENABLED_SOURCE_KEYS"] = "khgm_central_notices,khgm_supply"
-          os.environ["GOZ_IHALE_HTML_SOURCE_KEYS"] = "khgm_central_notices,khgm_supply"
+          source_keys = "khgm_central_notices,khgm_supply,deu_hospital_purchase,pau_hospital_purchase"
+          os.environ["GOZ_IHALE_ENABLED_SOURCE_KEYS"] = source_keys
+          os.environ["GOZ_IHALE_HTML_SOURCE_KEYS"] = source_keys
           os.environ["GOZ_IHALE_HTML_PAGE_KHGM_CENTRAL_NOTICES"] = "https://khgm.saglik.gov.tr/TR-119527/ihale-duyurulari.html"
           os.environ["GOZ_IHALE_HTML_PAGE_KHGM_SUPPLY"] = "https://khgmsatinalmadb.saglik.gov.tr/TR-43358/duyurular.html?Sayfa=1"
+          os.environ["GOZ_IHALE_HTML_PAGE_DEU_HOSPITAL_PURCHASE"] = "https://hastane2.deu.edu.tr/satin-alma/"
+          os.environ["GOZ_IHALE_HTML_PAGE_PAU_HOSPITAL_PURCHASE"] = "https://www.pau.edu.tr/ihale/tr"
           os.environ["GOZ_IHALE_INGEST_DB"] = os.path.join(temp, "ingestion.db")
           os.environ["GOZ_IHALE_SCAN_DB"] = os.path.join(temp, "scan.db")
           from app.collector.runner import run_source
@@ -45,8 +48,9 @@ jobs:
           if primary.get("status") not in {"success", "success_empty"} or fetched < 1:
               raise SystemExit("Primary official source collection failed smoke test.")
 
-          # Optional second official portal: report availability, but its DNS/network
-          # outage must not invalidate the already verified primary source.
-          secondary = run_source("khgm_supply")
-          print(f"Optional source result [khgm_supply]: status={secondary.get('status')}, metrics={secondary.get('metrics', {})}")
+          # Additional official portals are probed independently; temporary DNS/network
+          # outages must not invalidate the verified primary source.
+          for source_key in ("khgm_supply", "deu_hospital_purchase", "pau_hospital_purchase"):
+              secondary = run_source(source_key)
+              print(f"Optional source result [{source_key}]: status={secondary.get('status')}, fetched={secondary.get('fetched_count', 0)}, relevant={secondary.get('relevant_count', 0)}")
           PY
