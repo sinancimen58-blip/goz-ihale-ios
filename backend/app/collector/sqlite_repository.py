@@ -84,3 +84,14 @@ def list_events(limit: int=100, fingerprint: str | None = None):
         else:
             rows=db.execute("SELECT * FROM collected_notice_events ORDER BY created_at DESC,id DESC LIMIT ?",(limit,)).fetchall()
     return [dict(row) for row in rows]
+
+
+def list_source_observations(fingerprint: str | None = None, limit: int = 100):
+    initialize()
+    limit=max(1,min(limit,500))
+    with connection() as db:
+        if fingerprint:
+            rows=db.execute("SELECT * FROM notice_source_observations WHERE fingerprint=? ORDER BY last_seen DESC LIMIT ?",(fingerprint,limit)).fetchall()
+        else:
+            rows=db.execute("SELECT * FROM notice_source_observations ORDER BY last_seen DESC LIMIT ?",(limit,)).fetchall()
+    return [dict(row) for row in rows]
