@@ -50,8 +50,10 @@ The source catalog and discovery plans are metadata, not evidence that live coll
 
 ## Additional hospital sources (probed)
 
-- `pau_hospital_purchase`: official Pamukkale University Hospital purchasing listing, `https://www.pau.edu.tr/ihale/tr`. Optional-source CI probe fetched 151 links but yielded no currently relevant ophthalmology notices; it is not a production-live claim.
+- `pau_hospital_purchase`: official Pamukkale University Hospital purchasing listing, `https://www.pau.edu.tr/ihale/tr`. Live HTML probe fetched 151 links; the current probe found no relevant ophthalmology candidates. Keep opt-in.
+- `dmo`: public DMO listing, `https://www.dmo.gov.tr/Ihale/Liste?type=1`. Live HTML probe fetched 33 links; the current probe found no relevant ophthalmology candidates. Keep opt-in.
+- `ekap`: official EKAP bulletin page, `https://ekap.kik.gov.tr/ekap/ilan/bultenindirme.aspx`. Current adapter probe failed; keep disabled until a successful scan-ledger verification.
 - `deu_hospital_purchase`: official Dokuz Eylül hospital purchasing page, `https://hastane2.deu.edu.tr/satin-alma/`. The latest optional-source probe failed; keep disabled until successful scan-ledger verification.
-- `khgm_supply`: separate KHGM procurement portal. The latest probe could not resolve/validate its host; keep disabled until it is reachable and verified.
+- `khgm_supply`: separate KHGM procurement portal. The latest probe reported adapter missing/invalid; keep disabled until configuration and reachability are verified.
 
 The live-source CI workflow probes these sources independently. Network/DNS failure on an optional source must not block the validated primary KHGM source.
