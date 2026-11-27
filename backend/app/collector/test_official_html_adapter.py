@@ -1,7 +1,14 @@
 """Unit tests for the official HTML adapter parser and URL guard."""
+import io
 import unittest
 from unittest.mock import patch
-from .official_html_adapter import _Links, _validate
+from .official_html_adapter import OfficialHTMLAdapter, _Links, _validate
+
+class _FakeOpener:
+    def __init__(self, data):
+        self.data=data
+    def open(self, request, timeout):
+        return io.BytesIO(self.data)
 
 class OfficialHTMLParserTests(unittest.TestCase):
     def test_extracts_anchor_text_and_href(self):
@@ -13,6 +20,13 @@ class OfficialHTMLParserTests(unittest.TestCase):
         parser=_Links()
         parser.feed('<a>no link</a><a href="">empty</a>')
         self.assertEqual(parser.links,[])
+
+    def test_parser_handles_malformed_html_and_nested_text(self):
+        parser=_Links()
+        parser.feed('<a href="/notice/1"><b>OCT</b> cihaz alımı')
+        self.assertEqual(len(parser.links),1)
+        self.assertEqual(parser.links[0][0],'/notice/1')
+        self.assertIn('OCT',parser.links[0][1])
 
     def test_url_guard_rejects_non_https_and_host_mismatch(self):
         with self.assertRaises(ValueError): _validate("http://example.gov.tr/list","example.gov.tr")
@@ -32,17 +46,6 @@ class OfficialHTMLParserTests(unittest.TestCase):
             parser.feed(f'<a href="/{i}">link {i}</a>')
         self.assertLessEqual(len(parser.links),300)
 
-if __name__=="__main__":
-    unittest.main()
-
-
-    def test_parser_handles_malformed_html_and_nested_text(self):
-        parser=_Links()
-        parser.feed('<a href="/notice/1"><b>OCT</b> cihaz alımı')
-        self.assertEqual(len(parser.links),1)
-        self.assertEqual(parser.links[0][0],'/notice/1')
-        self.assertIn('OCT',parser.links[0][1])
-
     def test_parser_caps_link_count_when_many_links(self):
         parser=_Links()
         for i in range(500):
@@ -54,3 +57,21 @@ if __name__=="__main__":
         parser.feed('<a href="/relative">Relative</a><a href="https://example.gov.tr/absolute">Absolute</a>')
         self.assertEqual(parser.links[0][0],'/relative')
         self.assertEqual(parser.links[1][0],'https://example.gov.tr/absolute')
+
+    def test_collect_deduplicates_repeated_notice_links(self):
+        html=(
+            '<a href="/notice/1">OCT retina cihazı satın alımı</a>'
+            '<a href="/notice/1">OCT retina cihazı satın alımı tekrar</a>'
+            '<a href="/notice/2">YAG lazer cihazı satın alımı</a>'
+        ).encode()
+        with patch("app.collector.official_html_adapter._validate", side_effect=lambda url, host: url), \
+             patch("app.collector.official_html_adapter.build_opener", return_value=_FakeOpener(html)):
+            adapter=OfficialHTMLAdapter("Test Hastanesi","https://example.gov.tr/list","example.gov.tr")
+            candidates=adapter.collect()
+        self.assertEqual(len(candidates),2)
+        self.assertEqual([c.source_url for c in candidates],[
+            "https://example.gov.tr/notice/1","https://example.gov.tr/notice/2"
+        ])
+
+if __name__=="__main__":
+    unittest.main()
