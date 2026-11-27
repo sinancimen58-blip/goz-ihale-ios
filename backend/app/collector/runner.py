@@ -105,7 +105,7 @@ def run_source(source_key: str):
                  f"unchanged: {actions['unchanged']}; alert candidates: {alert_count}; "
                  f"retries: {retries}; duration: {duration_ms} ms")
         metrics={"fetched_count":len(candidates),"relevant_count":len(screened),
-                 "new_count":actions["new"],"updated_count":actions["updated],
+                 "new_count":actions["new"],"updated_count":actions["updated"],
                  "unchanged_count":actions["unchanged"],"alert_candidates":alert_count,
                  "duration_ms":duration_ms,"retry_count":retries}
         status="success_empty" if len(candidates)==0 else "success"
