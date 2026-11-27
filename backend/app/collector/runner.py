@@ -79,6 +79,10 @@ def run_source(source_key: str):
         status="disabled" if source_key not in enabled else "adapter_missing_or_invalid"
         message="Source not explicitly enabled." if source_key not in enabled else "Enabled but feed URL missing or invalid; no request made."
         return record_run(source,status,message,0)
+
+    # Record the actual configured endpoint for run-level provenance, not just
+    # the registry's canonical landing page. URLs are redacted before storage.
+    actual_source_url=getattr(adapter,"feed_url",None) or getattr(adapter,"source_url",None) or source.url
     started=time.perf_counter()
     retries=0
     try:
@@ -101,11 +105,11 @@ def run_source(source_key: str):
                  f"unchanged: {actions['unchanged']}; alert candidates: {alert_count}; "
                  f"retries: {retries}; duration: {duration_ms} ms")
         metrics={"fetched_count":len(candidates),"relevant_count":len(screened),
-                 "new_count":actions["new"],"updated_count":actions["updated"],
+                 "new_count":actions["new"],"updated_count":actions["updated],
                  "unchanged_count":actions["unchanged"],"alert_candidates":alert_count,
                  "duration_ms":duration_ms,"retry_count":retries}
         status="success_empty" if len(candidates)==0 else "success"
-        result=record_run(source,status,message,len(screened),metrics)
+        result=record_run(source,status,message,len(screened),metrics,source_url=actual_source_url)
         if isinstance(result,dict):
             result["notification_delivery"]=notification_summary
         return result
@@ -113,7 +117,7 @@ def run_source(source_key: str):
         retries=max(retries,int(getattr(exc,"retry_count",0)))
         duration_ms=int((time.perf_counter()-started)*1000)
         return record_run(source,"error",f"Collection failed ({type(exc).__name__}); details withheld to avoid leaking configuration or URLs.",0,
-                          {"duration_ms":duration_ms,"retry_count":retries})
+                          {"duration_ms":duration_ms,"retry_count":retries},source_url=actual_source_url)
 
 def run_enabled_sources():
     enabled=enabled_keys()
