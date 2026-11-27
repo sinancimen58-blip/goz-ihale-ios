@@ -29,6 +29,10 @@ def collect_with_retries(adapter):
             return adapter.collect(),retries
         except Exception as exc:
             if retries>=MAX_COLLECT_RETRIES or not is_retryable_collection_error(exc):
+                try:
+                    exc.retry_count=retries
+                except Exception:
+                    pass
                 raise
             delay=RETRY_DELAYS_SECONDS[retries]
             retries+=1
@@ -100,6 +104,7 @@ def run_source(source_key: str):
         status="success_empty" if len(candidates)==0 else "success"
         return record_run(source,status,message,len(screened),metrics)
     except Exception as exc:
+        retries=max(retries,int(getattr(exc,"retry_count",0)))
         duration_ms=int((time.perf_counter()-started)*1000)
         return record_run(source,"error",f"Collection failed ({type(exc).__name__}); details withheld to avoid leaking configuration or URLs.",0,
                           {"duration_ms":duration_ms,"retry_count":retries})
