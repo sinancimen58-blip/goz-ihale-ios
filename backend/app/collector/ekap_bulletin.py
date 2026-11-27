@@ -35,5 +35,5 @@ def extract_bulletin_links(html: str, base_url: str="https://ekap.kik.gov.tr/eka
         if p.path.lower().endswith(".pdf") or "pdf" in p.path.lower() or "pdf" in p.query.lower():
             out.append(url)
     date_text=" ".join(parser.text)
-    date_match=re.search(r"(\\d{1,2}\\.\\d{1,2}\\.\\d{4})",date_text)
+    date_match=re.search(r"(\d{1,2}\.\d{1,2}\.\d{4})",date_text)
     return {"pdf_urls":list(dict.fromkeys(out)),"bulletin_date":date_match.group(1) if date_match else None,"link_count":len(parser.links)}
