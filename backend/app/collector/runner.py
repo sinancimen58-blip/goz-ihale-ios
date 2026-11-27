@@ -20,8 +20,8 @@ def is_retryable_collection_error(exc):
         return exc.code in RETRYABLE_HTTP_CODES
     if isinstance(exc,URLError):
         reason=exc.reason
-        return isinstance(reason,(TimeoutError,socket.timeout,ConnectionError))
-    return isinstance(exc,(TimeoutError,socket.timeout,ConnectionError))
+        return isinstance(reason,(TimeoutError,socket.timeout,ConnectionError,socket.gaierror))
+    return isinstance(exc,(TimeoutError,socket.timeout,ConnectionError,socket.gaierror))
 
 def collect_with_retries(adapter):
     retries=0
