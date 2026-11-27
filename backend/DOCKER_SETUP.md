@@ -2,7 +2,7 @@
 
 Requirements: Docker and Docker Compose.
 
-1. Copy `.env.example` to `.env` and optionally adjust the exposed port.
+1. Copy `.env.example` to `.env`, set a strong write token and reviewed source configuration, then restrict the file to the server owner (`chmod 600 .env`). The Compose service passes this file into the container.
 2. From this folder, run `docker compose up --build -d`.
 3. Open `http://localhost:8000/` for the API status or `http://localhost:8000/docs` for Swagger.
 4. The primary tender database, ingestion database, and scan ledger are explicitly stored under `/data` and persisted in the Docker named volume `gozihale_data`.
