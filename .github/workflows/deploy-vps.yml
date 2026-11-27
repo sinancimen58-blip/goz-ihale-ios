@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "backend/**"
+      - "docs/VPS_AUTO_DEPLOY_SETUP.md"
       - ".github/workflows/deploy-vps.yml"
   workflow_dispatch:
 
@@ -16,7 +17,35 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install backend dependencies
+        run: pip install -r backend/requirements.txt
+      - name: Run backend tests
+        env:
+          PYTHONPATH: backend
+        run: pytest -q backend/tests
+      - name: Validate Python and shell scripts
+        run: |
+          set -euo pipefail
+          python -m compileall -q backend/app backend/scripts
+          bash -n backend/scripts/enable_live_collection.sh
+      - name: Validate Docker Compose and build image
+        run: |
+          set -euo pipefail
+          cd backend
+          cp .env.example .env
+          docker compose config --quiet
+          docker build -t gozihale-api:ci .
+
   deploy:
+    needs: test
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -66,5 +95,5 @@ jobs:
         run: |
           set -euo pipefail
           PORT="${DEPLOY_PORT:-22}"
-          REMOTE_COMMAND="cd ${DEPLOY_PATH} && git fetch origin main && git reset --hard origin/main && cd backend && docker compose up -d --build && docker compose ps && curl -fsS http://127.0.0.1:8000/api/health"
-          ssh -p "$PORT" -o StrictHostKeyChecking=yes -o BatchMode=yes "${DEPLOY_USER}@${DEPLOY_HOST}" "$REMOTE_COMMAND"
+          REMOTE_COMMAND="cd ${DEPLOY_PATH} && git pull --ff-only origin main && cd backend && docker compose up -d --build && docker compose ps && curl -fsS --retry 10 --retry-connrefused --retry-delay 2 http://127.0.0.1:8000/api/health"
+          ssh -p "$PORT" -o StrictHostKeyChecking=yes -o BatchMode=yes " ${DEPLOY_USER}@${DEPLOY_HOST}" "$REMOTE_COMMAND"
