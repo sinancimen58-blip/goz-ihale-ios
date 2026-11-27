@@ -25,7 +25,7 @@ def fingerprint_notice(title: str, institution: str, publication_date: str | Non
 
 def material_change(old: dict[str, Any], new: dict[str, Any]) -> list[str]:
     """Return fields whose changes should trigger an update alert."""
-    tracked = ("title", "deadline", "status", "quantity", "specification", "estimated_price", "document_url", "procurement_method", "payment_terms")
+    tracked = ("title", "deadline", "status", "quantity", "specification", "estimated_price", "document_url", "procurement_method", "payment_terms", "publication_date", "city", "category", "notice_id")
     changed=[]
     for field in tracked:
         a=normalize_text(str(old.get(field) or ""))
