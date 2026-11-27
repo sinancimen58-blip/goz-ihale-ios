@@ -34,3 +34,23 @@ class OfficialHTMLParserTests(unittest.TestCase):
 
 if __name__=="__main__":
     unittest.main()
+
+
+    def test_parser_handles_malformed_html_and_nested_text(self):
+        parser=_Links()
+        parser.feed('<a href="/notice/1"><b>OCT</b> cihaz alımı')
+        self.assertEqual(len(parser.links),1)
+        self.assertEqual(parser.links[0][0],'/notice/1')
+        self.assertIn('OCT',parser.links[0][1])
+
+    def test_parser_caps_link_count_when_many_links(self):
+        parser=_Links()
+        for i in range(500):
+            parser.feed(f'<a href="/notice/{i}">Notice {i}</a>')
+        self.assertEqual(len(parser.links),300)
+
+    def test_relative_and_absolute_link_parsing(self):
+        parser=_Links()
+        parser.feed('<a href="/relative">Relative</a><a href="https://example.gov.tr/absolute">Absolute</a>')
+        self.assertEqual(parser.links[0][0],'/relative')
+        self.assertEqual(parser.links[1][0],'https://example.gov.tr/absolute')
