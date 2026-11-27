@@ -1,19 +1,17 @@
 name: Scheduled source collection
 on:
-  schedule:
-    - cron: '0 6,14 * * 1-5'
   workflow_dispatch:
+    inputs:
+      note:
+        description: "Manual test only; scheduled collection will be enabled after HTTPS is configured"
+        required: false
+        type: string
 jobs:
   collect:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
-      - name: Trigger VPS collector and persist results on server
-        env:
-          API_TOKEN: ${{ secrets.GOZ_IHALE_API_WRITE_TOKEN }}
+      - name: Safety gate
         run: |
-          if [ -z "$API_TOKEN" ]; then echo "Missing GOZ_IHALE_API_WRITE_TOKEN repository secret"; exit 1; fi
-          curl --fail --silent --show-error --max-time 60 \\
-            -X POST -H "X-Goz-Ihale-Token: $API_TOKEN" \\
-            http://89.251.18.186/api/run-enabled-sources
+          echo "Collection trigger intentionally paused until API HTTPS is configured."
+          echo "Do not transmit API write tokens over plain HTTP."
+          exit 1
