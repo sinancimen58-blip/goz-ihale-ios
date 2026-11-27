@@ -1,29 +1,49 @@
-# GozIhale public-feed collection configuration
+# GozIhale live source configuration
 
-The RSS/Atom adapter is intentionally allowlisted, HTTPS-only, redirect-blocking and rejects non-public DNS addresses. Feed downloads are bounded to 2 MB and parsing to 500 entries; descriptions are truncated. URL fragments, credentials and excessive URL length are rejected. These controls are defense-in-depth, not a substitute for connection-time IP pinning and server isolation.
+Collection is opt-in: a source must be listed in `GOZ_IHALE_ENABLED_SOURCE_KEYS` and have an explicitly configured adapter. Do not enable an unreviewed source. The adapters reject non-HTTPS, credentials, fragments, non-public IP addresses and redirects, and cap downloaded content. These checks are defense-in-depth, not a substitute for server isolation and connection-time IP pinning.
 
-## Server configuration
-Configure these environment variables on the VPS (never commit tokens or private feed URLs):
-- `GOZ_IHALE_ENABLED_SOURCE_KEYS`: comma-separated keys, e.g. `ekap,dmo`
-- `GOZ_IHALE_FEED_EKAP`: verified RSS/Atom feed URL (HTTPS)
-- `GOZ_IHALE_FEED_DMO`: verified RSS/Atom feed URL (HTTPS)
+## Fast-start: official KHGM listing (HTML)
 
-Only verified public feeds should be configured. The registry URL is a discovery entry point, not proof of a working feed endpoint. Many procurement portals do not expose RSS; don't assume these URLs work.
+The KHGM Central Purchasing notice list is a public official listing page and is registered in the source catalog:
 
-## Running
-After HTTPS and authentication are properly configured, run the collector from the server or use the authenticated API. GitHub scheduled triggers remain paused until the API is protected by TLS.
+`https://khgm.saglik.gov.tr/TR-119527/ihale-duyurulari.html`
+
+On the server, set:
+
+- `GOZ_IHALE_ENABLED_SOURCE_KEYS=khgm_central_notices`
+- `GOZ_IHALE_HTML_SOURCE_KEYS=khgm_central_notices`
+
+The registered page URL is used by default. Optional override:
+
+- `GOZ_IHALE_HTML_PAGE_KHGM_CENTRAL_NOTICES`
+
+The adapter captures notice link titles and links from the official listing page; it does not extract the full document text or bid deadlines from attached PDFs. Review its collected output before relying on it operationally. A live collection is only confirmed when the scan ledger records a successful run.
+
+## RSS/Atom sources
+
+Configure the following only when the official portal offers a verified public feed:
+- `GOZ_IHALE_ENABLED_SOURCE_KEYS`: comma-separated enabled keys
+- `GOZ_IHALE_FEED_<SOURCE_KEY>`: verified public HTTPS feed URL
+
+## API and security
+
+- Set a strong server-side `GOZ_IHALE_API_WRITE_TOKEN`; never commit it.
+- Configure HTTPS and restrict CORS to trusted clients.
+- Persist the SQLite files via the Docker volume or equivalent.
+- Keep the API private behind a TLS reverse proxy; do not expose the write API over plaintext HTTP.
+- GitHub Actions scheduled collection uses `GOZ_IHALE_API_URL` and `GOZ_IHALE_API_TOKEN` secrets and sends the token only to HTTPS. If secrets are missing, the workflow skips.
+
+## Run and verify
+
+1. GET `/api/sources`; confirm the source is enabled and `adapter_ready` is true.
+2. POST `/api/run-source/khgm_central_notices` with `X-Goz-Ihale-Token` to run one source, or POST `/api/run-enabled-sources` for all enabled sources.
+3. Inspect `/api/scan-runs`, `/api/scan-summary`, `/api/collected-notices`, and `/api/collection-events`.
+4. Verify title relevance and original source URLs; review attachments manually for deadlines and technical details.
+5. Test iOS using the HTTPS API base URL.
+6. Expand to more sources after the first source's successful live run.
 
 ## Scheduled jobs
-GitHub Actions schedules use UTC. 06:00 and 14:00 UTC map to 09:00 and 17:00 Turkey time (UTC+3), on weekdays. GitHub scheduling may delay execution. Use server-side scheduled jobs if strict timing is required.
 
-## Verification and rollout checklist
+The workflow is scheduled for weekdays at 06:00 and 14:00 UTC (09:00 and 17:00 Turkey time, UTC+3), subject to GitHub scheduling delays. Add the two repository secrets to activate remote collection. Strict scheduling may be better handled on the server.
 
-1. Confirm the API is served over HTTPS before enabling remote schedules or mobile production traffic.
-2. Keep collector write-token secrets out of source control; rotate any token that was ever exposed.
-3. Start with one verified public feed and one source key; check `/api/sources` for adapter readiness.
-4. Trigger one manual collection and inspect `/api/scan-runs`, `/api/collected-notices`, and `/api/collection-events`.
-5. Confirm duplicate items are unchanged and deadline/content changes create update events.
-6. Back up both the API database and ingestion database before deployment.
-7. Expand the enabled-source list only after each feed has been verified and reviewed for terms, rate limits, and reliability.
-
-Collection currently supports configured RSS/Atom feeds only. Registry entries and source search plans are not live collectors.
+The source catalog and discovery plans are metadata, not evidence that live collection is working. Mark sources live only after successful scan-ledger verification.
