@@ -26,6 +26,8 @@ SOURCES = [
  Source("ebrd","EBRD","https://www.ebrd.com/","international"),
  Source("worldbank","World Bank","https://www.worldbank.org/","international"),
  Source("iett","İETT İhale","https://iett.istanbul/tender/index","institution"),
+ Source("pau_hospital_purchase","Pamukkale Üniversitesi Hastane Satın Alma","https://www.pau.edu.tr/ihale/tr","university_hospital",True,"Verified official hospital purchasing page; adapter URL and terms still need review."),
+ Source("deu_hospital_purchase","Dokuz Eylül Üniversitesi Hastane Satın Alma","https://hastane2.deu.edu.tr/satin-alma/","university_hospital",True,"Verified official hospital purchasing page; adapter URL and terms still need review."),
 ]
 
 # Institution pages are added dynamically as configured source URLs (e.g. hospitals,
