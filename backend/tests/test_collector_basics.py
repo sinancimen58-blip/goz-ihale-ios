@@ -126,3 +126,16 @@ def test_parser_caps_items():
         f"<item><title>Notice {i}</title></item>" for i in range(MAX_ITEMS + 1)
     ) + "</channel></rss>").encode()
     assert len(parse_feed(xml, "Test", "https://example.org")) == MAX_ITEMS
+
+from app.collector.keywords import classify_text
+
+
+def test_classifier_recognizes_expanded_terms():
+    assert "Yarık lamba" in classify_text("Slit lamp cihazı alımı")
+    assert "Biyometri" in classify_text("optik biyometri ve aks uzunluğu ölçümü")
+    assert "A-scan / B-scan" in classify_text("B scan ultrasonik cihaz")
+    assert "Fako sarf" in classify_text("phaco cassette consumables")
+
+
+def test_classifier_avoids_partial_word_false_positive():
+    assert classify_text("tipografi kitap basımı") == []
