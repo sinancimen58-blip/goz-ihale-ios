@@ -3,7 +3,7 @@
 from pathlib import Path
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
-import json, sys
+import json, sys, time
 
 BACKEND_DIR=Path(__file__).resolve().parents[1]
 SOURCE_KEYS=("khgm_central_notices","dmo")
@@ -34,8 +34,17 @@ def main():
         return 2
     port=env.get("GOZ_IHALE_PORT","8000")
     base=f"http://127.0.0.1:{port}"
-    health=request_json(base+"/api/health")
-    if health.get("status")!="ok":
+    health=None
+    for attempt in range(10):
+        try:
+            health=request_json(base+"/api/health")
+            if health.get("status")=="ok":
+                break
+        except (HTTPError,URLError,TimeoutError):
+            if attempt==9:
+                raise
+            time.sleep(2)
+    if not health or health.get("status")!="ok":
         print("API health check failed.",file=sys.stderr)
         return 2
     outcomes=[]
