@@ -36,6 +36,11 @@ def initialize():
         db.execute("""CREATE TABLE IF NOT EXISTS alert_deduplication (
             alert_key TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, event_type TEXT NOT NULL,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP)""")
+        db.execute("""CREATE TABLE IF NOT EXISTS alert_outbox (
+            alert_key TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, payload_json TEXT NOT NULL,
+            priority TEXT NOT NULL, reason TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending',
+            attempts INTEGER NOT NULL DEFAULT 0, last_error TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            sent_at TEXT)""")
 
 def ingest(record: dict[str, Any]) -> dict[str, Any]:
     initialize()
@@ -106,6 +111,8 @@ def ingest(record: dict[str, Any]) -> dict[str, Any]:
                 alert_reason="Aynı olay için bildirim daha önce oluşturuldu; tekrar bastırıldı"
             else:
                 db.execute("INSERT INTO alert_deduplication(alert_key,fingerprint,event_type) VALUES (?,?,?)",(alert_key,fingerprint,event_type_for_alert))
+                db.execute("INSERT INTO alert_outbox(alert_key,fingerprint,payload_json,priority,reason) VALUES (?,?,?,?,?)",
+                           (alert_key,fingerprint,payload,alert.priority,alert.reason))
     return {"fingerprint":fingerprint,"action":action,"changed_fields":changed,"alert":alert_sent,"alert_reason":alert_reason,"priority":alert.priority,"alert_key":alert_key}
 
 def list_notices(limit: int=100):
@@ -157,3 +164,35 @@ def source_disagreements(fingerprint: str):
         if len(values)>1:
             disagreements.append({"field":field,"values":[{"value":value,"sources":sources} for value,sources in values.items()]})
     return {"fingerprint":fingerprint,"observation_count":len(parsed),"disagreements":disagreements}
+
+def list_pending_alerts(limit: int = 100):
+    initialize()
+    with connection() as db:
+        rows=db.execute("SELECT alert_key,fingerprint,payload_json,priority,reason,attempts FROM alert_outbox WHERE status='pending' AND attempts<8 ORDER BY created_at,alert_key LIMIT ?",(max(1,min(limit,500)),)).fetchall()
+    result=[]
+    for row in rows:
+        item=dict(row)
+        try:
+            item["payload"]=json.loads(item.pop("payload_json"))
+        except (TypeError,ValueError):
+            item["payload"]={}
+        result.append(item)
+    return result
+
+def mark_alert_delivery(alert_key: str, success: bool, error: str | None = None):
+    initialize()
+    safe_error=(str(error or "Delivery failed")[:300] if not success else None)
+    with connection() as db:
+        if success:
+            db.execute("UPDATE alert_outbox SET status='sent',attempts=attempts+1,last_error=NULL,sent_at=CURRENT_TIMESTAMP WHERE alert_key=? AND status='pending'",(alert_key,))
+        else:
+            db.execute("UPDATE alert_outbox SET attempts=attempts+1,last_error=?,status=CASE WHEN attempts+1>=8 THEN 'failed' ELSE 'pending' END WHERE alert_key=? AND status='pending'",(safe_error,alert_key))
+
+def notification_counts():
+    initialize()
+    with connection() as db:
+        rows=db.execute("SELECT status,COUNT(*) AS count FROM alert_outbox GROUP BY status").fetchall()
+    counts={"pending":0,"sent":0,"failed":0}
+    for row in rows:
+        counts[row["status"]]=int(row["count"])
+    return counts
