@@ -1,0 +1,43 @@
+name: Autonomous Repository Maintenance
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "35 5 * * 1-5"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: autonomous-maintenance
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r backend/requirements.txt
+      - name: Run backend tests
+        working-directory: backend
+        env:
+          PYTHONPATH: .
+        run: pytest -q
+      - name: Validate Docker build
+        run: docker build -t gozihale-backend-check backend
+      - name: Maintenance summary
+        if: always()
+        run: |
+          {
+            echo "## Autonomous maintenance"
+            echo "- Backend job status: ${{ job.status }}"
+            echo "- Docker build: attempted"
+            echo "- Timestamp (UTC): $(date -u)"
+            echo "- Repository validation only; this workflow does not deploy to a VPS."
+          } >> "$GITHUB_STEP_SUMMARY"
