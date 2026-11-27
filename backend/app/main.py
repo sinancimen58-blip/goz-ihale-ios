@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .schemas import Tender
 from .collector.scoring import relevance_score
 from .collector.deadlines import days_remaining, urgency_label
-from .collector.sqlite_repository import list_notices as list_collected_notices, list_events as list_ingestion_events, ingest as ingest_collected_notice, list_source_observations as list_observations
+from .collector.sqlite_repository import list_notices as list_collected_notices, list_events as list_ingestion_events, ingest as ingest_collected_notice, list_source_observations as list_observations, source_disagreements as compare_sources
 import sqlite3, os
 from pathlib import Path
 
@@ -216,3 +216,9 @@ def run_enabled_collection(x_goz_ihale_token: str|None=Header(default=None)):
     from .collector.runner import run_enabled_sources
     results=run_enabled_sources()
     return {"live_collection":True,"count":len(results),"results":results}
+
+
+@app.get("/api/source-disagreements/{fingerprint}", tags=["collection"])
+def source_disagreements(fingerprint: str):
+    """Expose conflicting values observed across sources for a consolidated notice."""
+    return compare_sources(fingerprint)
