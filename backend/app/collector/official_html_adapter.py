@@ -12,30 +12,82 @@ from .models import NoticeCandidate
 
 MAX_BYTES=2_000_000
 MAX_LINKS=300
+MAX_CONTEXT_CHARS=2000
+GENERIC_LINK_LABELS={"detay","incele","görüntüle","indir","download","click here","devamı"}
 
 class _Links(HTMLParser):
+    """Extract links and their enclosing listing-row/card context."""
     def __init__(self):
-        super().__init__(); self.links=[]; self._href=None; self._text=[]
+        super().__init__()
+        self.links=[]
+        self.contexts=[]
+        self._href=None
+        self._text=[]
+        self._anchor_frame=None
+        self._frames=[]
+
+    def _count_links(self):
+        return len(self.links)+sum(len(frame["links"]) for frame in self._frames)
+
+    def _add(self,href,title,context=""):
+        if href and self._count_links()<MAX_LINKS:
+            self.links.append((href,title))
+            self.contexts.append(context[:MAX_CONTEXT_CHARS])
+
     def handle_starttag(self,tag,attrs):
+        attrs=dict(attrs)
+        classes=set((attrs.get("class") or "").casefold().split())
+        if tag.lower() in {"tr","li","article"} or (tag.lower()=="div" and classes.intersection({"notice","announcement","tender","news","item","card"})):
+            self._frames.append({"tag":tag.lower(),"text":[],"links":[]})
         if tag.lower()=="a":
-            attrs=dict(attrs); href=attrs.get("href")
-            if href and len(self.links)<MAX_LINKS:
-                self._href=href; self._text=[]
+            href=attrs.get("href")
+            if href and self._count_links()<MAX_LINKS:
+                self._href=href
+                self._text=[]
+                self._anchor_frame=self._frames[-1] if self._frames else None
+
     def handle_data(self,data):
-        if self._href is not None: self._text.append(data)
+        if self._href is not None:
+            self._text.append(data)
+        for frame in self._frames:
+            frame["text"].append(data)
+
     def _finish_anchor(self):
         if self._href is not None:
-            self.links.append((self._href," ".join(self._text).strip()))
-            self._href=None; self._text=[]
+            href=self._href
+            title=" ".join(self._text).strip()
+            frame=self._anchor_frame
+            if frame is not None:
+                frame["links"].append((href,title))
+            else:
+                self._add(href,title,"")
+        self._href=None
+        self._text=[]
+        self._anchor_frame=None
+
+    def _flush_frame(self,frame):
+        context=" ".join(frame["text"]).strip()
+        for href,title in frame["links"]:
+            self._add(href,title,context)
+        frame["links"].clear()
 
     def handle_endtag(self,tag):
         if tag.lower()=="a":
             self._finish_anchor()
+        # Close the nearest matching context; also close malformed nested frames.
+        for index in range(len(self._frames)-1,-1,-1):
+            if self._frames[index]["tag"]==tag.lower():
+                for frame in reversed(self._frames[index:]):
+                    self._flush_frame(frame)
+                del self._frames[index:]
+                break
 
     def close(self):
         super().close()
-        # Some official notice pages contain truncated HTML with unclosed anchors.
         self._finish_anchor()
+        for frame in reversed(self._frames):
+            self._flush_frame(frame)
+        self._frames.clear()
 
 class _NoRedirect(HTTPRedirectHandler):
     def redirect_request(self,req,fp,code,msg,headers,newurl):
@@ -67,16 +119,25 @@ class OfficialHTMLAdapter(SourceAdapter):
         if len(data)>MAX_BYTES: raise ValueError("Page exceeds size limit.")
         parser=_Links(); parser.feed(data.decode("utf-8","replace")); parser.close()
         out=[]
-        seen_urls=set()
-        for href,title in parser.links:
-            title=title.strip()
-            if len(title)<12 or not title: continue
+        seen_urls={}
+        for index,(href,anchor_title) in enumerate(parser.links):
+            context=parser.contexts[index] if index<len(parser.contexts) else ""
+            anchor_title=anchor_title.strip()
+            generic=anchor_title.casefold() in GENERIC_LINK_LABELS or len(anchor_title)<12
+            title=context.strip() if generic and len(context.strip())>=12 else anchor_title
+            if len(title)<12: continue
             link=urljoin(self.source_url,href)
             try: _validate(link,self.source_domain)
             except ValueError: continue
-            # Avoid repeated candidates when official pages render the same notice
-            # in multiple navigation/table sections.
-            if link in seen_urls: continue
-            seen_urls.add(link)
-            out.append(NoticeCandidate(title=title,institution=self.source_name,source_name=self.source_name,source_url=link,description=None))
+            description=context.strip()[:MAX_CONTEXT_CHARS] or None
+            # Avoid repeated candidates; prefer the richer listing context on duplicate URLs.
+            if link in seen_urls:
+                old=out[seen_urls[link]]
+                if description and len(description)>len(old.description or ""):
+                    old.description=description
+                if generic and description and len(description)>len(old.title):
+                    old.title=description[:600]
+                continue
+            seen_urls[link]=len(out)
+            out.append(NoticeCandidate(title=title[:600],institution=self.source_name,source_name=self.source_name,source_url=link,description=description))
         return out
