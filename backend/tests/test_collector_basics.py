@@ -241,3 +241,17 @@ def test_alert_candidate_deduplicates_repeated_identical_change(monkeypatch, tmp
     repeated=repo.ingest(extended)
     assert not repeated['alert']
     assert 'bastırıldı' in repeated['alert_reason']
+
+
+def test_event_payload_contains_old_new_and_changed_fields(monkeypatch, tmp_path):
+    import json
+    from app.collector import sqlite_repository as repo
+    monkeypatch.setattr(repo, 'DB_PATH', str(tmp_path / 'event_payload.sqlite'))
+    base={'title':'OCT cihazı alımı','institution':'Örnek Hastane','publication_date':'2026-11-27','source_name':'Kaynak','deadline':'2026-12-10'}
+    first=repo.ingest(base)
+    repo.ingest(dict(base,deadline='2026-12-20'))
+    event=repo.list_events(fingerprint=first['fingerprint'])[0]
+    payload=json.loads(event['payload_json'])
+    assert payload['old']['deadline']=='2026-12-10'
+    assert payload['new']['deadline']=='2026-12-20'
+    assert 'deadline' in payload['changed_fields']
