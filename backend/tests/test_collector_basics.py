@@ -148,3 +148,12 @@ def test_classifier_additional_procurement_terms():
     assert "IOL / Göz içi lens" in classify_text("IOL ve intraocular lens")
     assert "Biyometri" in classify_text("Biometri cihazı")
 
+
+
+def test_source_query_plan_contains_added_terms():
+    from app.collector.source_search_plan import TERMS
+    terms = {term.casefold() for term in TERMS}
+    assert "biomikroskop" in terms
+    assert "pakimetri" in terms
+    assert "iol" in terms
+    assert "göz içi lens" in terms
