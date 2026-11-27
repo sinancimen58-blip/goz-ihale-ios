@@ -58,7 +58,7 @@ def ingest(record: dict[str, Any]) -> dict[str, Any]:
             changed=material_change(old,record)
             action="updated" if changed else "unchanged"
         columns=("notice_id","title","institution","city","publication_date","deadline","category","quantity","specification","estimated_price","document_url","source_name","source_url","summary","procurement_method","payment_terms","status","relevance_score")
-        values=[record.get(c) if record.get(c) not in (None, "") or old is None else old.get(c) for c in columns]
+        values=[(record.get(c) if record.get(c) not in (None, "") else ("new" if c == "status" and old is None else None)) if old is None else (record.get(c) if record.get(c) not in (None, "") else old.get(c)) for c in columns]
         if old is None:
             db.execute("""INSERT INTO collected_notices (fingerprint,notice_id,title,institution,city,publication_date,deadline,category,quantity,specification,estimated_price,document_url,source_name,source_url,summary,procurement_method,payment_terms,status,relevance_score,payload_json)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",[fingerprint,*values,payload])
