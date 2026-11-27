@@ -1,5 +1,6 @@
 """Controlled source runner. Explicit source allowlist and verified feed URLs required."""
-import os, time
+import os, time, socket
+from urllib.error import HTTPError, URLError
 from .registry import list_sources
 from .scan_ledger import record_run
 from .filtering import screen_many
@@ -7,6 +8,31 @@ from .sqlite_repository import ingest
 from .rss_adapter import RSSFeedAdapter
 from .official_html_adapter import OfficialHTMLAdapter
 from urllib.parse import urlparse
+
+# Only retry read-only collection on clearly transient transport/server failures.
+MAX_COLLECT_RETRIES=2
+RETRY_DELAYS_SECONDS=(0.25,0.75)
+RETRYABLE_HTTP_CODES={408,429,500,502,503,504}
+
+def is_retryable_collection_error(exc):
+    if isinstance(exc,HTTPError):
+        return exc.code in RETRYABLE_HTTP_CODES
+    if isinstance(exc,URLError):
+        reason=exc.reason
+        return isinstance(reason,(TimeoutError,socket.timeout,ConnectionError))
+    return isinstance(exc,(TimeoutError,socket.timeout,ConnectionError))
+
+def collect_with_retries(adapter):
+    retries=0
+    while True:
+        try:
+            return adapter.collect(),retries
+        except Exception as exc:
+            if retries>=MAX_COLLECT_RETRIES or not is_retryable_collection_error(exc):
+                raise
+            delay=RETRY_DELAYS_SECONDS[retries]
+            retries+=1
+            time.sleep(delay)
 
 def enabled_keys():
     raw=os.getenv("GOZ_IHALE_ENABLED_SOURCE_KEYS","")
@@ -48,8 +74,9 @@ def run_source(source_key: str):
         message="Source not explicitly enabled." if source_key not in enabled else "Enabled but feed URL missing or invalid; no request made."
         return record_run(source,status,message,0)
     started=time.perf_counter()
+    retries=0
     try:
-        candidates=adapter.collect()
+        candidates,retries=collect_with_retries(adapter)
         screened=screen_many(candidates)
         actions={"new":0,"updated":0,"unchanged":0}
         alert_count=0
@@ -65,16 +92,17 @@ def run_source(source_key: str):
         message=(f"Fetched: {len(candidates)}; relevant: {len(screened)}; "
                  f"new: {actions['new']}; updated: {actions['updated']}; "
                  f"unchanged: {actions['unchanged']}; alert candidates: {alert_count}; "
-                 f"duration: {duration_ms} ms")
+                 f"retries: {retries}; duration: {duration_ms} ms")
         metrics={"fetched_count":len(candidates),"relevant_count":len(screened),
                  "new_count":actions["new"],"updated_count":actions["updated"],
                  "unchanged_count":actions["unchanged"],"alert_candidates":alert_count,
-                 "duration_ms":duration_ms}
+                 "duration_ms":duration_ms,"retry_count":retries}
         status="success_empty" if len(candidates)==0 else "success"
         return record_run(source,status,message,len(screened),metrics)
     except Exception as exc:
         duration_ms=int((time.perf_counter()-started)*1000)
-        return record_run(source,"error",f"Collection failed ({type(exc).__name__}); details withheld to avoid leaking configuration or URLs.",0,{"duration_ms":duration_ms})
+        return record_run(source,"error",f"Collection failed ({type(exc).__name__}); details withheld to avoid leaking configuration or URLs.",0,
+                          {"duration_ms":duration_ms,"retry_count":retries})
 
 def run_enabled_sources():
     enabled=enabled_keys()
