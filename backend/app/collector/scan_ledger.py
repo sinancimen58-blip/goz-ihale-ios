@@ -11,6 +11,7 @@ _METRIC_COLUMNS = {
     "unchanged_count": "INTEGER NOT NULL DEFAULT 0",
     "alert_candidates": "INTEGER NOT NULL DEFAULT 0",
     "duration_ms": "INTEGER NOT NULL DEFAULT 0",
+    "retry_count": "INTEGER NOT NULL DEFAULT 0",
 }
 
 def connection():
@@ -34,13 +35,13 @@ def record_run(source, status="not_implemented", message="No permitted live adap
     with connection() as db:
         cur=db.execute("""INSERT INTO scan_runs
             (source_key,source_name,source_url,status,message,notices_found,finished_at,
-             fetched_count,relevant_count,new_count,updated_count,unchanged_count,alert_candidates,duration_ms)
-            VALUES (?,?,?,?,?,?,CURRENT_TIMESTAMP,?,?,?,?,?,?,?)""",
+             fetched_count,relevant_count,new_count,updated_count,unchanged_count,alert_candidates,duration_ms,retry_count)
+            VALUES (?,?,?,?,?,?,CURRENT_TIMESTAMP,?,?,?,?,?,?,?,?)""",
             (source.key,source.name,source.url,status,message,notices_found,
              int(metrics.get("fetched_count",0)),int(metrics.get("relevant_count",notices_found)),
              int(metrics.get("new_count",0)),int(metrics.get("updated_count",0)),
              int(metrics.get("unchanged_count",0)),int(metrics.get("alert_candidates",0)),
-             int(metrics.get("duration_ms",0))))
+             int(metrics.get("duration_ms",0)),int(metrics.get("retry_count",0))))
         return dict(db.execute("SELECT * FROM scan_runs WHERE id=?",(cur.lastrowid,)).fetchone())
 
 def list_runs(limit=100):
