@@ -1,0 +1,35 @@
+name: Official source live smoke test
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "20 6 * * 1-5"
+
+jobs:
+  khgm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install backend dependencies
+        run: pip install -r backend/requirements.txt
+      - name: Fetch and screen official KHGM listing
+        env:
+          PYTHONPATH: backend
+        run: |
+          python - <<'PY'
+          from app.collector.official_html_adapter import OfficialHTMLAdapter
+          from app.collector.filtering import screen_many
+
+          page = "https://khgm.saglik.gov.tr/TR-119527/ihale-duyurulari.html"
+          adapter = OfficialHTMLAdapter("KHGM Merkezi Satın Alma", page, "khgm.saglik.gov.tr")
+          candidates = adapter.collect()
+          relevant = screen_many(candidates)
+          print(f"Live official listing fetched: {len(candidates)} links; {len(relevant)} ophthalmology-relevant candidates")
+          for item in relevant[:10]:
+              print(item["title"], item["source_url"])
+          if not candidates:
+              raise SystemExit("Official listing returned no candidate links.")
+          PY
