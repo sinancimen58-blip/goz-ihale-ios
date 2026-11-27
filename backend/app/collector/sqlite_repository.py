@@ -66,7 +66,23 @@ def ingest(record: dict[str, Any]) -> dict[str, Any]:
         for identity_key in identity_keys:
             db.execute("INSERT OR IGNORE INTO notice_identity_keys(identity_key,fingerprint) VALUES (?,?)",(identity_key,fingerprint))
         if action != "unchanged":
-            db.execute("INSERT INTO collected_notice_events (fingerprint,event_type,changed_fields,payload_json) VALUES (?,?,?,?)",(fingerprint,action,json.dumps(changed,ensure_ascii=False),payload))
+            event_type=action
+            if action == "updated":
+                status_text=str(record.get("status") or "").casefold()
+                haystack=" ".join(str(record.get(k) or "") for k in ("title","summary","status","specification")).casefold()
+                if any(term in status_text or term in haystack for term in ("iptal","cancel","cancelled")):
+                    event_type="cancellation"
+                elif any(term in haystack for term in ("zeyilname","amendment","ek doküman")):
+                    event_type="amendment"
+                elif "deadline" in changed:
+                    event_type="deadline_change"
+                elif "specification" in changed:
+                    event_type="specification_change"
+                elif "document_url" in changed:
+                    event_type="document_change"
+                elif "status" in changed:
+                    event_type="status_change"
+            db.execute("INSERT INTO collected_notice_events (fingerprint,event_type,changed_fields,payload_json) VALUES (?,?,?,?)",(fingerprint,event_type,json.dumps(changed,ensure_ascii=False),payload))
     alert=decide_alert(action,changed,text=str(record),score=int(record.get("relevance_score",0)))
     return {"fingerprint":fingerprint,"action":action,"changed_fields":changed,"alert":alert.send,"alert_reason":alert.reason,"priority":alert.priority}
 
