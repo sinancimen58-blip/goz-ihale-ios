@@ -161,3 +161,13 @@ def test_source_query_plan_contains_added_terms():
 \ndef test_classifier_glaucoma_and_surgery_consumables():\n    from app.collector.keywords import classify_text\n    assert "Glokom cihazları" in classify_text("RNFL glaucoma analysis device")\n    assert "Göz cerrahisi sarf" in classify_text("Vitrektomi sarf malzemesi")\n\ndef test_source_plan_includes_glaucoma_and_retina_terms():\n    from app.collector.source_search_plan import TERMS\n    terms = {term.casefold() for term in TERMS}\n    assert "glokom" in terms and "vitrektomi sarf" in terms\n
 \ndef test_scoring_detects_amendment_and_deadline_signals():\n    from app.collector.scoring import relevance_score\n    result = relevance_score("OCT cihazı ihalesi için zeyilname ve son başvuru tarihi")\n    assert result["is_relevant"]\n    assert "zeyilname" in result["priority_terms"]\n    assert "son başvuru" in result["priority_terms"]\n    assert result["score"] > 18\n\ndef test_priority_signal_alone_does_not_make_notice_relevant():\n    from app.collector.scoring import relevance_score\n    result = relevance_score("Acil yol bakım ihalesi")\n    assert not result["is_relevant"]\n
 \ndef test_material_change_tracks_cancellation_and_amendment_fields():\n    from app.collector.normalize import material_change\n    old = {"status":"active", "specification":"OCT", "document_url":"https://x.test/a"}\n    new = {"status":"cancelled", "specification":"OCT updated", "document_url":"https://x.test/b"}\n    changed = material_change(old, new)\n    assert "status" in changed and "specification" in changed and "document_url" in changed\n\ndef test_material_change_tracks_category_and_notice_identity():\n    from app.collector.normalize import material_change\n    changed = material_change({"category":"OCT", "notice_id":"1"}, {"category":"Fako", "notice_id":"2"})\n    assert "category" in changed and "notice_id" in changed\n
+
+def test_alerts_highlight_deadline_document_and_cancel_changes():
+    from app.collector.alerts import decide_alert
+    assert decide_alert("updated", ["document_url"]).priority == "high"
+    assert decide_alert("updated", ["status"], text="iptal edilen ihale").priority == "high"
+    assert decide_alert("updated", ["payment_terms"]).priority == "high"
+
+def test_alerts_normalize_turkish_priority_terms():
+    from app.collector.alerts import decide_alert
+    assert decide_alert("updated", [], text="Zeyilname yayınlandı").priority == "high"
