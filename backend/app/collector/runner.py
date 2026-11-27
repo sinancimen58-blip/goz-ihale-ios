@@ -5,6 +5,8 @@ from .scan_ledger import record_run
 from .filtering import screen_many
 from .sqlite_repository import ingest
 from .rss_adapter import RSSFeedAdapter
+from .official_html_adapter import OfficialHTMLAdapter
+from urllib.parse import urlparse
 
 def enabled_keys():
     raw=os.getenv("GOZ_IHALE_ENABLED_SOURCE_KEYS","")
@@ -13,6 +15,7 @@ def enabled_keys():
 def configured_adapters():
     adapters={}
     enabled=enabled_keys()
+    html_keys={key.strip() for key in os.getenv("GOZ_IHALE_HTML_SOURCE_KEYS","").split(",") if key.strip()}
     for source in list_sources():
         if source.key not in enabled:
             continue
@@ -22,7 +25,15 @@ def configured_adapters():
             try:
                 adapters[source.key]=RSSFeedAdapter(source.name,feed_url)
             except ValueError:
-                continue
+                pass
+        if source.key in html_keys:
+            page_url=os.getenv("GOZ_IHALE_HTML_PAGE_"+source.key.upper().replace("-","_"))
+            registered_host=urlparse(source.url).hostname
+            if page_url and registered_host:
+                try:
+                    adapters[source.key]=OfficialHTMLAdapter(source.name,page_url,registered_host)
+                except ValueError:
+                    continue
     return adapters
 
 def run_source(source_key: str):
