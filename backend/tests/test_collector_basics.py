@@ -205,3 +205,14 @@ def test_duplicate_identity_does_not_merge_different_dates(monkeypatch, tmp_path
     b = repo.ingest(second)
     assert a['fingerprint'] != b['fingerprint']
     assert len(repo.list_notices()) == 2
+
+
+def test_ingest_classifies_deadline_and_cancellation_events(monkeypatch, tmp_path):
+    from app.collector import sqlite_repository as repo
+    monkeypatch.setattr(repo, 'DB_PATH', str(tmp_path / 'events.sqlite'))
+    base = {'title':'OCT cihazı alımı','institution':'Örnek Hastane','publication_date':'2026-11-27','source_name':'Kaynak','status':'active'}
+    first=repo.ingest(base)
+    cancelled=dict(base,status='cancelled',summary='İhale iptal edildi')
+    repo.ingest(cancelled)
+    events=repo.list_events(fingerprint=first['fingerprint'])
+    assert events[0]['event_type']=='cancellation'
