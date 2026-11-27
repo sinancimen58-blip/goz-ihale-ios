@@ -29,18 +29,20 @@ jobs:
           python - <<'PY'
           import os, tempfile
           temp = tempfile.mkdtemp(prefix="gozihale-smoke-")
-          os.environ["GOZ_IHALE_ENABLED_SOURCE_KEYS"] = "khgm_central_notices"
-          os.environ["GOZ_IHALE_HTML_SOURCE_KEYS"] = "khgm_central_notices"
+          os.environ["GOZ_IHALE_ENABLED_SOURCE_KEYS"] = "khgm_central_notices,khgm_supply"
+          os.environ["GOZ_IHALE_HTML_SOURCE_KEYS"] = "khgm_central_notices,khgm_supply"
           os.environ["GOZ_IHALE_HTML_PAGE_KHGM_CENTRAL_NOTICES"] = "https://khgm.saglik.gov.tr/TR-119527/ihale-duyurulari.html"
+          os.environ["GOZ_IHALE_HTML_PAGE_KHGM_SUPPLY"] = "https://khgmsatinalmadb.saglik.gov.tr/TR-43358/duyurular.html?Sayfa=1"
           os.environ["GOZ_IHALE_INGEST_DB"] = os.path.join(temp, "ingestion.db")
           os.environ["GOZ_IHALE_SCAN_DB"] = os.path.join(temp, "scan.db")
           from app.collector.runner import run_source
 
-          result = run_source("khgm_central_notices")
-          fetched = result.get("fetched_count", 0)
-          relevant = result.get("relevant_count", 0)
-          new_count = result.get("new_count", 0)
-          print(f"Live collector result: status={result.get('status')}, fetched={fetched}, relevant={relevant}, new={new_count}")
-          if result.get("status") not in {"success", "success_empty"} or fetched < 1:
-              raise SystemExit("Official source collection did not pass the live smoke test.")
+          for source_key in ("khgm_central_notices", "khgm_supply"):
+              result = run_source(source_key)
+              fetched = result.get("fetched_count", 0)
+              relevant = result.get("relevant_count", 0)
+              new_count = result.get("new_count", 0)
+              print(f"Live collector result [{source_key}]: status={result.get('status')}, fetched={fetched}, relevant={relevant}, new={new_count}")
+              if result.get("status") not in {"success", "success_empty"} or fetched < 1:
+                  raise SystemExit(f"Official source collection failed smoke test: {source_key}")
           PY
