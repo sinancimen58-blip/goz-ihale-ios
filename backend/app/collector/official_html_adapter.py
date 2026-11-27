@@ -58,11 +58,16 @@ class OfficialHTMLAdapter(SourceAdapter):
         if len(data)>MAX_BYTES: raise ValueError("Page exceeds size limit.")
         parser=_Links(); parser.feed(data.decode("utf-8","replace"))
         out=[]
+        seen_urls=set()
         for href,title in parser.links:
             title=title.strip()
             if len(title)<12 or not title: continue
             link=urljoin(self.source_url,href)
             try: _validate(link,self.source_domain)
             except ValueError: continue
+            # Avoid repeated candidates when official pages render the same notice
+            # in multiple navigation/table sections.
+            if link in seen_urls: continue
+            seen_urls.add(link)
             out.append(NoticeCandidate(title=title,institution=self.source_name,source_name=self.source_name,source_url=link,description=None))
         return out
