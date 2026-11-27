@@ -28,6 +28,7 @@ def initialize():
             if field not in existing:
                 db.execute(f"ALTER TABLE collected_notices ADD COLUMN {field} TEXT")
         db.execute("""CREATE TABLE IF NOT EXISTS notice_identity_keys (identity_key TEXT PRIMARY KEY, fingerprint TEXT NOT NULL)""")
+        db.execute("""CREATE TABLE IF NOT EXISTS notice_source_observations (fingerprint TEXT NOT NULL, source_name TEXT NOT NULL, source_url TEXT, observed_payload TEXT, last_seen TEXT DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(fingerprint,source_name,source_url))""")
         db.execute("""CREATE TABLE IF NOT EXISTS collected_notice_events (
             id INTEGER PRIMARY KEY AUTOINCREMENT, fingerprint TEXT NOT NULL,
             event_type TEXT NOT NULL, changed_fields TEXT, payload_json TEXT,
@@ -53,12 +54,14 @@ def ingest(record: dict[str, Any]) -> dict[str, Any]:
             changed=material_change(old,record)
             action="updated" if changed else "unchanged"
         columns=("notice_id","title","institution","city","publication_date","deadline","category","quantity","specification","estimated_price","document_url","source_name","source_url","summary","procurement_method","payment_terms","status","relevance_score")
-        values=[record.get(c) for c in columns]
+        values=[record.get(c) if record.get(c) not in (None, "") or old is None else old.get(c) for c in columns]
         if old is None:
             db.execute("""INSERT INTO collected_notices (fingerprint,notice_id,title,institution,city,publication_date,deadline,category,quantity,specification,estimated_price,document_url,source_name,source_url,summary,procurement_method,payment_terms,status,relevance_score,payload_json)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",[fingerprint,*values,payload])
         else:
             db.execute("""UPDATE collected_notices SET notice_id=?,title=?,institution=?,city=?,publication_date=?,deadline=?,category=?,quantity=?,specification=?,estimated_price=?,document_url=?,source_name=?,source_url=?,summary=?,procurement_method=?,payment_terms=?,status=?,relevance_score=?,payload_json=?,last_seen=CURRENT_TIMESTAMP WHERE fingerprint=?""",[*values,payload,fingerprint])
+        observation=json.dumps(record,ensure_ascii=False,default=str)
+        db.execute("INSERT INTO notice_source_observations(fingerprint,source_name,source_url,observed_payload,last_seen) VALUES (?,?,?,?,CURRENT_TIMESTAMP) ON CONFLICT(fingerprint,source_name,source_url) DO UPDATE SET observed_payload=excluded.observed_payload,last_seen=CURRENT_TIMESTAMP",(fingerprint,record.get("source_name") or "unknown",record.get("source_url") or "",observation))
         for identity_key in identity_keys:
             db.execute("INSERT OR IGNORE INTO notice_identity_keys(identity_key,fingerprint) VALUES (?,?)",(identity_key,fingerprint))
         if action != "unchanged":
