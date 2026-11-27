@@ -71,3 +71,26 @@ def test_run_source_unknown_key(monkeypatch):
     result = runner.run_source("unknown")
     assert result["status"] == "unknown_source"
     assert result["notices_saved"] == 0
+
+import pytest
+from app.collector.rss_adapter import _validate_feed_url
+
+
+def test_feed_url_requires_https():
+    with pytest.raises(ValueError):
+        _validate_feed_url("http://example.org/feed")
+
+
+def test_feed_url_rejects_credentials():
+    with pytest.raises(ValueError):
+        _validate_feed_url("https://user:pass@example.org/feed")
+
+
+def test_feed_url_rejects_localhost():
+    with pytest.raises(ValueError):
+        _validate_feed_url("https://localhost/feed")
+
+
+def test_feed_url_rejects_localhost_suffix():
+    with pytest.raises(ValueError):
+        _validate_feed_url("https://test.localhost/feed")
