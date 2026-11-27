@@ -171,3 +171,10 @@ def test_alerts_highlight_deadline_document_and_cancel_changes():
 def test_alerts_normalize_turkish_priority_terms():
     from app.collector.alerts import decide_alert
     assert decide_alert("updated", [], text="Zeyilname yayınlandı").priority == "high"
+
+ 
+def test_notice_match_keys_has_title_institution_fallback():
+    from app.collector.normalize import notice_match_keys
+    keys = notice_match_keys({"title":"OCT alımı", "institution":"Hastane", "publication_date":"2026-11-27"})
+    assert len(keys) == 2
+    assert notice_match_keys({"title":"", "institution":"Hastane"}) == []
