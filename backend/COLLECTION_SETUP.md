@@ -45,3 +45,7 @@ Inspect `/api/health`, `/api/sources`, `/api/scan-summary`, `/api/collected-noti
 - KHGM Supply: adapter/configuration missing or invalid; keep disabled.
 
 CI live-source probes use temporary databases; they do not prove production VPS collection is running.
+
+## Optional Telegram alert delivery
+
+Set `GOZ_IHALE_TELEGRAM_BOT_TOKEN` and `GOZ_IHALE_TELEGRAM_CHAT_ID` only in the server's secret environment. The collector stores new/important alert candidates in a deduplicated outbox and delivers them on collection runs when configured. Pending messages are retained without credentials. Status is available at `GET /api/notification-status`; authenticated retry is `POST /api/dispatch-alerts`. Failed deliveries stop after eight attempts.
