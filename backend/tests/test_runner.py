@@ -1,4 +1,5 @@
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
+import socket
 from app.collector import runner
 from app.collector.runner import run_source
 
@@ -66,6 +67,26 @@ def test_retry_exhaustion_records_attempt_count(monkeypatch):
     assert result["status"]=="error"
     assert adapter.calls==3
     assert result["metrics"]["retry_count"]==2
+
+def test_collect_retries_transient_dns_errors(monkeypatch):
+    recorded={}
+    class Adapter:
+        calls=0
+        def collect(self):
+            self.calls+=1
+            if self.calls==1:
+                raise URLError(socket.gaierror("temporary DNS lookup failure"))
+            return []
+    adapter=Adapter()
+    _patch_run(monkeypatch,adapter,recorded)
+    result=run_source("ekap")
+    assert result["status"]=="success_empty"
+    assert adapter.calls==2
+    assert result["metrics"]["retry_count"]==1
+    assert "retries: 1" in result["message"]
+
+def test_direct_dns_error_is_retryable():
+    assert runner.is_retryable_collection_error(socket.gaierror("temporary DNS lookup failure"))
 
 def test_optional_html_dns_failure_does_not_abort_other_sources(monkeypatch):
     import socket
