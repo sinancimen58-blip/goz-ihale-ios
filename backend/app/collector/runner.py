@@ -54,7 +54,7 @@ def run_source(source_key: str):
                  f"unchanged: {actions['unchanged']}; alert candidates: {alert_count}")
         return record_run(source,"success",message,len(screened))
     except Exception as exc:
-        return record_run(source,"error",f"{type(exc).__name__}: {str(exc)[:300]}",0)
+        return record_run(source,"error",f"Collection failed ({type(exc).__name__}); details withheld to avoid leaking configuration or URLs.",0)
 
 def run_enabled_sources():
     enabled=enabled_keys()
