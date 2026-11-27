@@ -66,3 +66,30 @@ def test_specification_review_api():
     response=client.get("/api/specification-review", params={"text":"ZEISS marka, eşdeğer ürün, kurulum"})
     assert response.status_code == 200
     assert response.json()["flag_count"] >= 2
+
+
+def test_source_catalog_api_is_safe_and_read_only():
+    response = client.get("/api/sources")
+    assert response.status_code == 200
+    rows = response.json()
+    assert rows
+    assert all("feed_configured" in row and "adapter_ready" in row for row in rows)
+
+
+def test_scan_catalog_requires_token_and_does_not_claim_live_collection():
+    denied = client.post("/api/scan-catalog")
+    assert denied.status_code == 401
+    allowed = client.post("/api/scan-catalog", headers={"X-Goz-Ihale-Token": "test-write-token"})
+    assert allowed.status_code == 200
+    payload = allowed.json()
+    assert payload["live_collection"] is False
+    assert "websites were not contacted" in payload["message"]
+
+
+def test_scan_summary_endpoint_reports_catalog_state():
+    response = client.get("/api/scan-summary")
+    assert response.status_code == 200
+    payload = response.json()
+    assert "sources_with_runs" in payload
+    assert "latest_status_counts" in payload
+    assert "live_collection_configured" in payload
