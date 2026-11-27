@@ -1,7 +1,7 @@
 """Unit tests for the official HTML adapter parser and URL guard."""
 import unittest
 from unittest.mock import patch
-from .official_html_adapter import _Links
+from .official_html_adapter import _Links, _validate
 
 class OfficialHTMLParserTests(unittest.TestCase):
     def test_extracts_anchor_text_and_href(self):
@@ -14,7 +14,7 @@ class OfficialHTMLParserTests(unittest.TestCase):
         parser.feed('<a>no link</a><a href="">empty</a>')
         self.assertEqual(parser.links,[])
 
-    def test_link_limit(self):
+    def test_url_guard_rejects_non_https_and_host_mismatch(self):\n        with self.assertRaises(ValueError): _validate("http://example.gov.tr/list","example.gov.tr")\n        with self.assertRaises(ValueError): _validate("https://other.gov.tr/list","example.gov.tr")\n\n    def test_url_guard_rejects_credentials_and_fragment(self):\n        with self.assertRaises(ValueError): _validate("https://user:pass@example.gov.tr/list","example.gov.tr")\n        with self.assertRaises(ValueError): _validate("https://example.gov.tr/list#x","example.gov.tr")\n\n    @patch("socket.getaddrinfo", return_value=[(2,1,6,"",("127.0.0.1",443))])\n    def test_url_guard_rejects_non_public_ip(self, mocked_dns):\n        with self.assertRaises(ValueError): _validate("https://example.gov.tr/list","example.gov.tr")\n\n    def test_link_limit(self):
         parser=_Links()
         for i in range(350):
             parser.feed(f'<a href="/{i}">link {i}</a>')
