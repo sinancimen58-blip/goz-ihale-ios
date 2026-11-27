@@ -94,3 +94,35 @@ def test_feed_url_rejects_localhost():
 def test_feed_url_rejects_localhost_suffix():
     with pytest.raises(ValueError):
         _validate_feed_url("https://test.localhost/feed")
+
+def test_feed_url_rejects_fragment():
+    with pytest.raises(ValueError):
+        _validate_feed_url("https://example.org/feed#fragment")
+
+
+def test_feed_url_rejects_too_long():
+    with pytest.raises(ValueError):
+        _validate_feed_url("https://example.org/" + "a" * 2050)
+
+
+def test_feed_url_rejects_private_resolution(monkeypatch):
+    import socket
+    monkeypatch.setattr(socket, "getaddrinfo", lambda *args, **kwargs: [
+        (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", 443))
+    ])
+    with pytest.raises(ValueError, match="non-public"):
+        _validate_feed_url("https://example.org/feed")
+
+
+def test_parser_rejects_oversized_content():
+    from app.collector.rss_adapter import MAX_FEED_BYTES
+    with pytest.raises(ValueError, match="size limit"):
+        parse_feed(b"x" * (MAX_FEED_BYTES + 1), "Test", "https://example.org")
+
+
+def test_parser_caps_items():
+    from app.collector.rss_adapter import MAX_ITEMS
+    xml = ("<rss><channel>" + "".join(
+        f"<item><title>Notice {i}</title></item>" for i in range(MAX_ITEMS + 1)
+    ) + "</channel></rss>").encode()
+    assert len(parse_feed(xml, "Test", "https://example.org")) == MAX_ITEMS
