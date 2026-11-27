@@ -246,6 +246,8 @@ def priority_notices(limit: int = 50):
     today_rows=[]
     for row in rows[:max(1,min(limit,200))]:
         enriched=dict(row)
+        # SwiftUI requires a stable string ID; the fingerprint is source-independent.
+        enriched["id"]=enriched.get("fingerprint") or enriched.get("notice_id") or enriched.get("title","")
         enriched["days_remaining"]=days_remaining(enriched.get("deadline"))
         enriched["urgency"]=urgency_label(enriched.get("deadline"))
         today_rows.append(enriched)
