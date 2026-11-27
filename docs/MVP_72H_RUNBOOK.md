@@ -30,6 +30,18 @@ From the backend folder on the VPS, run `bash scripts/enable_live_collection.sh`
 - GOZ_IHALE_DB, GOZ_IHALE_INGEST_DB, GOZ_IHALE_SCAN_DB: persistent storage paths.
 - GOZ_IHALE_CORS_ORIGINS: restrict to required clients.
 
+## SSH host-key mismatch: manual trust verification required
+
+A recent GitHub Actions deployment failed at SSH host verification, not at backend tests or secret validation. The runner reported the ED25519 host fingerprint `SHA256:OBEb/6S5XuNtiQVn6sNhJrXMkE7CJkcOdCqUKhvRCNY` and a changed key. **Do not accept this fingerprint based only on the runner log.**
+
+1. Open the VPS provider's console or another trusted administrative channel.
+2. On the VPS, inspect the host key fingerprint with `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub`.
+3. Compare the fingerprint through that trusted channel. If it does not match, investigate the host-key change before proceeding.
+4. If it matches and the change is expected, update the GitHub Actions `DEPLOY_KNOWN_HOSTS` secret with the verified host-key line. A `ssh-keyscan` result alone is not trusted; verify its fingerprint first.
+5. Retry the deployment and confirm the remote health check.
+
+The latest deployment run stopped because the pinned key did not match the VPS key. Backend tests and the secret/SSH-file preparation steps passed; the remote deploy and health checks remain unverified.
+
 ## Explicit blockers needing operator access
 - Public HTTPS domain/reverse-proxy configuration.
 - GitHub Actions secrets for remote HTTPS collection, if that schedule is preferred.
