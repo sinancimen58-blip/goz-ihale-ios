@@ -140,6 +140,49 @@ def scan_summary(limit: int = 500):
     return {"sources_with_runs":len(latest),"latest_status_counts":statuses,
             "latest_runs":list(latest.values()),"live_collection_configured":bool(enabled_keys())}
 
+@app.get("/api/health", tags=["health"])
+def api_health():
+    """Read-only deployment diagnostics; healthy storage does not imply live collection."""
+    try:
+        with connect() as c:
+            c.execute("SELECT 1").fetchone()
+        notices = list_collected_notices(500)
+        runs = list_scan_runs(500)
+    except Exception as exc:
+        raise HTTPException(503, "API storage checks failed.") from exc
+
+    latest_by_source = {}
+    for run in runs:
+        key = run.get("source_key")
+        if key and key not in latest_by_source:
+            latest_by_source[key] = run
+
+    status_counts = {}
+    for run in latest_by_source.values():
+        status = run.get("status", "unknown")
+        status_counts[status] = status_counts.get(status, 0) + 1
+
+    latest_run = runs[0] if runs else None
+    return {
+        "status": "ok",
+        "api_version": app.version,
+        "storage_checks": {
+            "primary_db": "ok",
+            "ingestion_db": "ok",
+            "scan_ledger_db": "ok",
+        },
+        "live_collection_configured": bool(enabled_keys()),
+        "collected_notice_count_capped_at_500": len(notices),
+        "sources_with_runs": len(latest_by_source),
+        "latest_source_status_counts": status_counts,
+        "latest_scan": ({
+            "source_key": latest_run.get("source_key"),
+            "status": latest_run.get("status"),
+            "finished_at": latest_run.get("finished_at"),
+        } if latest_run else None),
+    }
+
+
 @app.post("/api/scan-catalog", tags=["collection"])
 def scan_catalog(x_goz_ihale_token: str|None=Header(default=None)):
     require_write_token(x_goz_ihale_token)

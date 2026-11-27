@@ -3,7 +3,7 @@
 ## Current state
 - API and iOS prototype are in the repository.
 - SQLite persistence, ingestion event log, source catalog, scan ledger, relevance scoring, deadline parsing and urgency labels exist.
-- The scheduled GitHub Actions workflow is a framework only: it runs configured adapters. No source is enabled and no feed URL is confirmed, so it does not currently retrieve real procurement notices.
+- CI live-source smoke tests have fetched and screened official pages in isolated runs. The scheduled production collection workflow remains a framework: it needs a persistent HTTPS API URL and write token, and its remote sources must be explicitly configured and enabled.
 - iOS is not yet built or tested in Xcode or on a physical device.
 
 ## Before public deployment
@@ -25,3 +25,9 @@ The priority-notices endpoint adds `days_remaining` and `urgency` fields to each
 - If the variable is absent, these endpoints fail closed with HTTP 503; incorrect or missing request token returns HTTP 401.
 - Store the token only in the hosting provider's secret settings. Do not commit it to GitHub or the app source.
 - This is a basic shared-secret gate, not a substitute for HTTPS, rate limiting, origin restrictions, or a stronger identity system.
+
+## Health endpoint
+
+- `GET /api/health` performs read-only SQLite checks across the API, ingestion, and scan-ledger stores and reports the latest recorded source outcomes.
+- A healthy storage result is **not** proof that live collection is configured or currently running. The response separates storage checks from `live_collection_configured` and the last recorded scan.
+- The notice count is capped at 500 for a lightweight diagnostic response.

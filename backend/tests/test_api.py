@@ -18,6 +18,23 @@ def test_health_is_explicitly_not_live():
     assert response.status_code == 200
     assert response.json()["live_data"] is False
 
+def test_detailed_health_endpoint_reports_storage_without_claiming_live_collection():
+    response = client.get("/api/health")
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "ok"
+    assert payload["api_version"]
+    assert payload["storage_checks"] == {
+        "primary_db": "ok",
+        "ingestion_db": "ok",
+        "scan_ledger_db": "ok",
+    }
+    assert 0 <= payload["collected_notice_count_capped_at_500"] <= 500
+    assert isinstance(payload["live_collection_configured"], bool)
+    assert isinstance(payload["latest_source_status_counts"], dict)
+    assert "latest_scan" in payload
+
+
 def test_demo_records_and_category_filter():
     response = client.get("/api/tenders")
     assert response.status_code == 200
