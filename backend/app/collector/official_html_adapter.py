@@ -67,9 +67,10 @@ class _Links(HTMLParser):
 
     def _flush_frame(self,frame):
         context=" ".join(frame["text"]).strip()
-        for href,title in frame["links"]:
+        links=frame["links"]
+        frame["links"]=[]
+        for href,title in links:
             self._add(href,title,context)
-        frame["links"].clear()
 
     def handle_endtag(self,tag):
         if tag.lower()=="a":
