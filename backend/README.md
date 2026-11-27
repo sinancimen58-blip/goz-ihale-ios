@@ -27,3 +27,12 @@ SQLite files are created automatically or configured via environment variables. 
 ## Configuration
 
 See `COLLECTION_SETUP.md` for source keys, HTTPS API write-token, persistent storage and scheduled workflow requirements. See `DOCKER_SETUP.md` and `VPS_SECURITY_CHECKLIST.md` before deployment.
+
+## Telegram alert delivery (optional)
+
+The collector writes notification candidates to a durable, deduplicated SQLite outbox. Telegram delivery is optional and requires server-side environment variables:
+
+- `GOZ_IHALE_TELEGRAM_BOT_TOKEN`
+- `GOZ_IHALE_TELEGRAM_CHAT_ID`
+
+Never commit these values. If either is missing, alerts remain queued and are not discarded. After configuration, each collection run attempts delivery; `GET /api/notification-status` reports only whether configuration is present and the outbox counts, and authenticated `POST /api/dispatch-alerts` retries queued messages. Failed delivery is retried on subsequent runs up to eight attempts. Verify tender deadlines and source documents independently.
