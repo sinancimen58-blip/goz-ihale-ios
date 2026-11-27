@@ -13,13 +13,17 @@ SQLite files are created automatically or configured via environment variables. 
 
 ## Live-source validation status
 
-- **KHGM central notice listing:** validated in GitHub Actions using the official public listing; the latest successful test fetched 185 links, screened 1 relevant notice and persisted 1 new notice in a temporary test database. This is CI validation, not a deployed continuous service.
-- **Pamukkale University Hospital procurement listing:** public HTML collection succeeded in the optional-source probe (151 links); that run produced no ophthalmology-relevant candidates.
-- **DMO published tender listing:** public HTML collection succeeded (33 links); that run produced no ophthalmology-relevant candidates. The source remains opt-in.
-- **EKAP bulletin listing:** the current runner probe failed; keep it disabled until a successful probe.
-- **KHGM Supply portal / DEU Hospital purchase:** current probes report adapter/network failures; keep disabled.
-- Source collection remains opt-in. Configure and verify sources on a server before enabling scheduled production collection.
+- **KHGM central notice listing:** live GitHub Actions probe on 27 Nov 2026 fetched 187 links, screened 1 ophthalmology-relevant notice and persisted 1 new notice in an ephemeral test database. This is CI validation, not a deployed continuous service.
+- **Pamukkale University Hospital procurement listing:** public HTML probe fetched 151 links; no ophthalmology-relevant candidate was found in the current sample.
+- **DMO published tender listing:** public HTML probe fetched 92 links; no ophthalmology-relevant candidate was found in the current sample.
+- **EKAP bulletin listing:** current adapter probe failed; keep disabled until a successful scan.
+- **Dokuz Eylül hospital purchase:** current network probe failed; keep disabled until successful verification.
+- **KHGM Supply portal:** current probe reports adapter missing/invalid; keep disabled until endpoint and configuration are reviewed.
+
+## VPS live-source activation
+
+`scripts/enable_live_collection.sh` configures KHGM and DMO, preserves the existing token if present (otherwise creates one), rebuilds Docker Compose and runs both source scans. It installs weekday 09:00/17:00 Europe/Istanbul cron only when run as root and cron is active. See `LIVE_COLLECTION_RUNBOOK.md`.
 
 ## Configuration
 
-See `COLLECTION_SETUP.md` for source keys, HTTPS API write-token, persistent storage, scheduled workflow secrets and smoke-test instructions. See `DOCKER_SETUP.md` and `VPS_SECURITY_CHECKLIST.md` before deployment.
+See `COLLECTION_SETUP.md` for source keys, HTTPS API write-token, persistent storage and scheduled workflow requirements. See `DOCKER_SETUP.md` and `VPS_SECURITY_CHECKLIST.md` before deployment.
