@@ -65,3 +65,26 @@ def test_retry_exhaustion_records_attempt_count(monkeypatch):
     assert result["status"]=="error"
     assert adapter.calls==3
     assert result["metrics"]["retry_count"]==2
+
+def test_optional_html_dns_failure_does_not_abort_other_sources(monkeypatch):
+    import socket
+    from types import SimpleNamespace
+
+    monkeypatch.setenv("GOZ_IHALE_ENABLED_SOURCE_KEYS", "primary,secondary")
+    monkeypatch.setenv("GOZ_IHALE_HTML_SOURCE_KEYS", "primary,secondary")
+    monkeypatch.setenv("GOZ_IHALE_HTML_PAGE_PRIMARY", "https://primary.example.gov/list")
+    monkeypatch.setenv("GOZ_IHALE_HTML_PAGE_SECONDARY", "https://secondary.example.gov/list")
+    monkeypatch.setattr(runner, "list_sources", lambda: [
+        SimpleNamespace(key="primary", name="Primary", url="https://primary.example.gov/", official=True),
+        SimpleNamespace(key="secondary", name="Secondary", url="https://secondary.example.gov/", official=True),
+    ])
+
+    def fake_adapter(name, url, host):
+        if name == "Secondary":
+            raise socket.gaierror("temporary DNS failure")
+        return object()
+
+    monkeypatch.setattr(runner, "OfficialHTMLAdapter", fake_adapter)
+    adapters = runner.configured_adapters()
+    assert "primary" in adapters
+    assert "secondary" not in adapters
