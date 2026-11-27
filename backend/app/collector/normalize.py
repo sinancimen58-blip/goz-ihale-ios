@@ -23,6 +23,18 @@ def fingerprint_notice(title: str, institution: str, publication_date: str | Non
     return hashlib.sha256(seed.encode("utf-8")).hexdigest()
 
 
+def notice_match_keys(record: dict[str, Any]) -> list[str]:
+    """Build conservative fallback identity keys for notices missing stable publisher IDs."""
+    title = normalize_text(record.get("title"))
+    institution = normalize_text(record.get("institution"))
+    publication_date = normalize_text(record.get("publication_date"))
+    if not title or not institution:
+        return []
+    base = hashlib.sha256(f"{title}|{institution}".encode("utf-8")).hexdigest()
+    dated = hashlib.sha256(f"{title}|{institution}|{publication_date}".encode("utf-8")).hexdigest() if publication_date else None
+    return [key for key in (dated, base) if key]
+
+
 def material_change(old: dict[str, Any], new: dict[str, Any]) -> list[str]:
     """Return fields whose changes should trigger an update alert."""
     tracked = ("title", "deadline", "status", "quantity", "specification", "estimated_price", "document_url", "procurement_method", "payment_terms", "publication_date", "city", "category", "notice_id")
