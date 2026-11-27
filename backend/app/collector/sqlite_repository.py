@@ -41,9 +41,10 @@ def ingest(record: dict[str, Any]) -> dict[str, Any]:
     identity_keys=notice_match_keys(record)
     with connection() as db:
         oldrow=db.execute("SELECT * FROM collected_notices WHERE fingerprint=?",(fingerprint,)).fetchone()
-        if oldrow is None and not record.get("notice_id") and identity_keys:
-            marks=",".join("?" for _ in identity_keys)
-            match=db.execute("SELECT fingerprint FROM notice_identity_keys WHERE identity_key IN ("+marks+") LIMIT 1",identity_keys).fetchone()
+        if oldrow is None and not record.get("notice_id") and record.get("publication_date") and identity_keys:
+            # Match only date-specific key to avoid merging separate procurement rounds.
+            dated_key=identity_keys[0]
+            match=db.execute("SELECT fingerprint FROM notice_identity_keys WHERE identity_key=?",(dated_key,)).fetchone()
             if match:
                 fingerprint=match["fingerprint"]
                 oldrow=db.execute("SELECT * FROM collected_notices WHERE fingerprint=?",(fingerprint,)).fetchone()
