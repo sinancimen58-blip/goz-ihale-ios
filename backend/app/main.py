@@ -121,6 +121,22 @@ def sources():
 def scan_runs(limit: int = 100):
     return list_scan_runs(limit)
 
+@app.get("/api/scan-summary", tags=["collection"])
+def scan_summary(limit: int = 500):
+    """Summarize the most recent recorded run per source from the scan ledger."""
+    runs=list_scan_runs(max(1,min(limit,500)))
+    latest={}
+    for run in runs:
+        key=run.get("source_key")
+        if key and key not in latest:
+            latest[key]=run
+    statuses={}
+    for run in latest.values():
+        status=run.get("status","unknown")
+        statuses[status]=statuses.get(status,0)+1
+    return {"sources_with_runs":len(latest),"latest_status_counts":statuses,
+            "latest_runs":list(latest.values()),"live_collection_configured":bool(enabled_keys())}
+
 @app.post("/api/scan-catalog", tags=["collection"])
 def scan_catalog(x_goz_ihale_token: str|None=Header(default=None)):
     require_write_token(x_goz_ihale_token)
