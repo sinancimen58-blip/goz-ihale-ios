@@ -24,7 +24,7 @@ Allow only SSH (preferably restricted to your IP), HTTP, and HTTPS. Do not expos
 - Configure reasonable request size, timeout and rate limits.
 
 ## Secrets and authentication
-- Keep tokens and credentials in a root-owned environment file, mode 600, not in Git.
+- Keep tokens and credentials in a deploy-user/root-owned environment file, mode 600, not in Git. Compose passes `backend/.env` into the container; ensure the file exists before starting.
 - Use strong, unique secrets and rotate any exposed credentials.
 - Implement authenticated access and authorization before real users or sensitive data.
 - Never use a shared write token as the sole production authorization model.
@@ -34,7 +34,7 @@ Allow only SSH (preferably restricted to your IP), HTTP, and HTTPS. Do not expos
 - Back up the database daily, encrypt backups, store a copy off-server, and periodically test restores.
 - Avoid copying SQLite files while writes are active unless using a safe backup method.
 
-## Validation steps
+## Automated deployment workflow\nThe repository includes `.github/workflows/deploy-vps.yml`. It deploys only when these GitHub Environment (`production`) secrets are configured: `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_PATH`, `DEPLOY_SSH_KEY`, `DEPLOY_KNOWN_HOSTS` (optional `DEPLOY_PORT`, default 22). The SSH user must have access to the dedicated clone path and permission to run Docker Compose; use a restricted deploy account, not root, and verify the pinned host key. Keep `backend/.env` on the VPS, outside Git.\n\n## Validation steps
 1. `docker compose config`
 2. `docker compose up -d --build`
 3. `docker compose ps`
