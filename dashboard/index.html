@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gözİhale • Canlı Geliştirme</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1220;--card:#111c2e;--line:#263650;--muted:#95a8c5;--text:#edf4ff;--green:#28c281;--amber:#f3bd55;--red:#f16d76;--blue:#77aaff}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(140deg,#09111e,#102039 55%,#10172a);font:15px system-ui,-apple-system,sans-serif;color:var(--text)}main{max-width:1100px;margin:auto;padding:24px}header{display:flex;justify-content:space-between;gap:20px;align-items:center;flex-wrap:wrap}.eyebrow{color:var(--blue);font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:12px}h1{font-size:clamp(28px,4vw,42px);margin:5px 0}p{color:var(--muted)}.pill{border:1px solid var(--line);border-radius:30px;padding:8px 13px;color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:22px 0}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px}.metric{font-size:28px;font-weight:750;margin-top:8px}.muted{color:var(--muted)}.wide{grid-column:span 2}.stage{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);align-items:flex-start}.stage:last-child{border:0}.dot{width:12px;height:12px;border-radius:50%;background:#687b99;margin-top:5px;flex-shrink:0}.done .dot{background:var(--green)}.blocked .dot{background:var(--red)}.active .dot{background:var(--amber)}.stage h3{margin:0 0 5px;font-size:16px}.stage p{margin:0;font-size:13px}.list{display:grid;gap:10px}.item{border:1px solid var(--line);padding:13px;border-radius:12px}.item a{color:var(--blue);text-decoration:none}.small{font-size:12px}.bar{height:7px;background:#263650;border-radius:10px;overflow:hidden;margin-top:14px}.bar span{display:block;height:100%;background:linear-gradient(90deg,#38ca91,#7bb5ff);width:0}.two{display:grid;grid-template-columns:1.3fr 1fr;gap:14px}button{background:#1c3151;color:var(--text);border:1px solid var(--line);padding:10px 15px;border-radius:10px;cursor:pointer}footer{padding:20px 0;color:var(--muted);font-size:12px}@media(max-width:800px){.grid{grid-template-columns:repeat(2,1fr)}.two{grid-template-columns:1fr}.wide{grid-column:span 2}}@media(max-width:480px){main{padding:16px}.grid{gap:8px}.card{padding:14px}}
+</style></head><body><main>
+<header><div><div class="eyebrow">Gözİhale · 72 saat MVP sprint</div><h1>Canlı geliştirme paneli</h1><p>GitHub'dan otomatik güncellenen çalışma, commit ve CI görünümü.</p></div><div><span class="pill" id="updated">Veriler yükleniyor…</span><p><button onclick="refresh()">↻ Yenile</button></p></div></header>
+<section class="grid">
+<div class="card"><div class="muted">Son commit</div><div class="metric" id="sha">—</div><div class="small muted" id="commitTime">yükleniyor</div></div>
+<div class="card"><div class="muted">Son CI çalışması</div><div class="metric" id="ci">—</div><div class="small muted" id="ciInfo">yükleniyor</div></div>
+<div class="card"><div class="muted">Son bakım</div><div class="metric" id="maintenance">—</div><div class="small muted">GitHub Actions</div></div>
+<div class="card"><div class="muted">Canlı sunucu</div><div class="metric" id="deploy">Doğrulanmadı</div><div class="small muted">VPS sağlık kontrolü yok</div></div>
+</section>
+<div class="two"><section class="card"><h2>Proje aşamaları</h2><div id="stages">
+<div class="stage" id="s1"><div class="dot"></div><div><h3>1 · Kaynak erişimi & canlı veri</h3><p>Resmî kaynaklardan gerçek ilanların çekilmesi ve kaynak erişiminin doğrulanması.</p></div></div>
+<div class="stage" id="s2"><div class="dot"></div><div><h3>2 · Filtreleme, normalize & dedupe</h3><p>İlanların standardizasyonu ve tekrar kayıtların engellenmesi.</p></div></div>
+<div class="stage" id="s3"><div class="dot"></div><div><h3>3 · Kalıcı veritabanı</h3><p>İlanların ve tarama kayıtlarının kalıcı tutulması.</p></div></div>
+<div class="stage" id="s4"><div class="dot"></div><div><h3>4 · API</h3><p>İlan listesi ve durum uçlarının canlı veriyle doğrulanması.</p></div></div>
+<div class="stage" id="s5"><div class="dot"></div><div><h3>5 · iOS bağlantısı</h3><p>Mevcut ekranların API'den veri göstermesi.</p></div></div>
+<div class="stage" id="s6"><div class="dot"></div><div><h3>6 · Otomatik tarama & bildirim</h3><p>Planlı tarama ve bildirim tesliminin doğrulanması.</p></div></div>
+<div class="stage" id="s7"><div class="dot"></div><div><h3>7 · Canlı deploy</h3><p>HTTPS sunucu, secrets, health check ve gerçek ortam testi.</p></div></div>
+</div><div class="bar"><span id="progress"></span></div><p class="small" id="progressText">Kilometre taşları doğrulandıkça güncellenecek.</p></section>
+<section class="card"><h2>Son GitHub çalışmaları</h2><div id="runs" class="list">Yükleniyor…</div></section></div>
+<section class="card" style="margin-top:14px"><h2>Son commitler</h2><div id="commits" class="list">Yükleniyor…</div></section>
+<footer>Bu panel GitHub'ın herkese açık API'sinden verileri alır. Aşama durumları yalnızca repository kanıtıyla işaretlenir; VPS veya ilan verisi doğrulanmadan canlı başarı gösterilmez. Otomatik yenileme: 30 saniye.</footer>
+</main><script>
+const owner="sinancimen58-blip",repo="goz-ihale-ios",base="https://api.github.com/repos/"+owner+"/"+repo;
+async function get(path){let r=await fetch(base+path,{headers:{"Accept":"application/vnd.github+json"}});if(!r.ok)throw Error(r.status+" "+path);return r.json()}
+function date(s){return s?new Date(s).toLocaleString("tr-TR"):"—"}
+function esc(s){return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+async function refresh(){document.getElementById("updated").textContent="Güncelleniyor…";
+try{const [commits,runs]=await Promise.all([get("/commits?per_page=5"),get("/actions/runs?per_page=12")]);
+const latest=commits[0];document.getElementById("sha").innerHTML='<a style="color:var(--blue)" href="'+latest.html_url+'">'+latest.sha.slice(0,7)+'</a>';document.getElementById("commitTime").textContent=date(latest.commit.author.date);
+const w=runs.workflow_runs;const b=w.find(x=>x.path.includes("backend-tests"))||w[0];document.getElementById("ci").textContent=b?({success:"Başarılı",failure:"Başarısız",queued:"Sırada",in_progress:"Çalışıyor"}[b.status==="completed"?b.conclusion:b.status]||b.status):"—";document.getElementById("ciInfo").textContent=b?date(b.updated_at):"—";const m=w.find(x=>x.name.includes("Autonomous Repository Maintenance"));document.getElementById("maintenance").textContent=m?({success:"Başarılı",failure:"Hata",queued:"Sırada",in_progress:"Çalışıyor"}[m.status==="completed"?m.conclusion:m.status]||m.status):"—";
+document.getElementById("runs").innerHTML=w.slice(0,8).map(x=>'<div class="item"><b>'+esc(x.name)+'</b><br><span class="small muted">'+esc(x.display_title)+'</span><br><span class="small">'+esc(x.status==="completed"?x.conclusion:x.status)+' · '+date(x.updated_at)+'</span><br><a href="'+x.html_url+'">Çalışmayı aç ↗</a></div>').join("");
+document.getElementById("commits").innerHTML=commits.map(x=>'<div class="item"><a href="'+x.html_url+'"><b>'+x.sha.slice(0,7)+'</b> · '+esc(x.commit.message.split("\n")[0])+'</a><br><span class="small muted">'+esc(x.commit.author.name)+' · '+date(x.commit.author.date)+'</span></div>').join("");
+}catch(e){document.getElementById("updated").textContent="GitHub API erişim hatası";document.getElementById("runs").textContent=e.toString()}
+document.getElementById("updated").textContent="Son yenileme: "+new Date().toLocaleTimeString("tr-TR");}
+refresh();setInterval(refresh,30000);
+</script></body></html>
