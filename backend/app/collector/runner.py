@@ -70,7 +70,8 @@ def run_source(source_key: str):
                  "new_count":actions["new"],"updated_count":actions["updated"],
                  "unchanged_count":actions["unchanged"],"alert_candidates":alert_count,
                  "duration_ms":duration_ms}
-        status="success_empty" if len(candidates)==0 else "success"\n        return record_run(source,status,message,len(screened),metrics)
+        status="success_empty" if len(candidates)==0 else "success"
+        return record_run(source,status,message,len(screened),metrics
     except Exception as exc:
         duration_ms=int((time.perf_counter()-started)*1000)
         return record_run(source,"error",f"Collection failed ({type(exc).__name__}); details withheld to avoid leaking configuration or URLs.",0,{"duration_ms":duration_ms})
