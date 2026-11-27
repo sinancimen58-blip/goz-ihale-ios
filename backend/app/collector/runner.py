@@ -39,12 +39,20 @@ def run_source(source_key: str):
     try:
         candidates=adapter.collect()
         screened=screen_many(candidates)
-        saved=[]
+        actions={"new":0,"updated":0,"unchanged":0}
+        alert_count=0
         for record in screened:
             record["source_name"]=source.name
             record["source_url"]=record.get("source_url") or source.url
-            saved.append(ingest(record))
-        return record_run(source,"success",f"Candidates: {len(candidates)}; relevant: {len(screened)}",len(screened))
+            result=ingest(record)
+            action=result.get("action","unchanged")
+            actions[action]=actions.get(action,0)+1
+            if result.get("alert"):
+                alert_count+=1
+        message=(f"Fetched: {len(candidates)}; relevant: {len(screened)}; "
+                 f"new: {actions['new']}; updated: {actions['updated']}; "
+                 f"unchanged: {actions['unchanged']}; alert candidates: {alert_count}")
+        return record_run(source,"success",message,len(screened))
     except Exception as exc:
         return record_run(source,"error",f"{type(exc).__name__}: {str(exc)[:300]}",0)
 
