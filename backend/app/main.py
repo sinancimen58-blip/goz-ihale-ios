@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .schemas import Tender
 from .collector.scoring import relevance_score
 from .collector.deadlines import days_remaining, urgency_label
-from .collector.sqlite_repository import list_notices as list_collected_notices, list_events as list_ingestion_events, ingest as ingest_collected_notice, list_source_observations as list_observations, source_disagreements as compare_sources
+from .collector.sqlite_repository import list_notices as list_collected_notices, list_events as list_ingestion_events, ingest as ingest_collected_notice, list_source_observations as list_observations, source_disagreements as compare_sources, notification_counts
 import sqlite3, os
 from pathlib import Path
 
@@ -77,6 +77,19 @@ def analyze_notice(text: str): return relevance_score(text)
 def collected_notices(limit: int = 100):
     """List notices in the separate persistent ingestion prototype."""
     return list_collected_notices(limit)
+
+@app.get("/api/notification-status", tags=["notifications"])
+def notification_status():
+    """Report Telegram configuration and durable alert-outbox counts without exposing credentials."""
+    from .collector.notifications import telegram_configured
+    return {"telegram_configured":telegram_configured(),"outbox":notification_counts()}
+
+@app.post("/api/dispatch-alerts", tags=["notifications"])
+def dispatch_alerts(x_goz_ihale_token: str|None=Header(default=None)):
+    """Retry pending alert-outbox delivery; credentials remain server-side."""
+    require_write_token(x_goz_ihale_token)
+    from .collector.notifications import dispatch_pending_telegram
+    return dispatch_pending_telegram()
 
 @app.get("/api/collection-events", tags=["collection"])
 def collection_events(limit: int = 100, fingerprint: str | None = None):
