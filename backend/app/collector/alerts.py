@@ -15,7 +15,7 @@ def decide_alert(action: str, changed_fields: list[str] | None = None, text: str
         return AlertDecision(True, "Yeni ilan", "normal")
     if action == "updated":
         haystack=(text or "").casefold()
-        if any(term in haystack for term in HIGH_PRIORITY_TERMS) or any(f in (changed_fields or []) for f in ("deadline", "status", "specification", "payment_terms")):
+        if any(term in haystack for term in HIGH_PRIORITY_TERMS) or any(f in (changed_fields or []) for f in ("deadline", "status", "specification", "payment_terms", "document_url")):
             return AlertDecision(True, "Önemli ilan değişikliği", "high")
         return AlertDecision(True, "İlan güncellemesi", "normal")
     return AlertDecision(False, "Yeni veya önemli değişiklik yok", "normal")
