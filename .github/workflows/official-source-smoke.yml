@@ -27,16 +27,18 @@ jobs:
           PYTHONPATH: backend
         run: |
           python - <<'PY'
-          from app.collector.official_html_adapter import OfficialHTMLAdapter
-          from app.collector.filtering import screen_many
+          import os, tempfile
+          temp = tempfile.mkdtemp(prefix="gozihale-smoke-")
+          os.environ["GOZ_IHALE_ENABLED_SOURCE_KEYS"] = "khgm_central_notices"
+          os.environ["GOZ_IHALE_HTML_SOURCE_KEYS"] = "khgm_central_notices"
+          os.environ["GOZ_IHALE_HTML_PAGE_KHGM_CENTRAL_NOTICES"] = "https://khgm.saglik.gov.tr/TR-119527/ihale-duyurulari.html"
+          os.environ["GOZ_IHALE_INGEST_DB"] = os.path.join(temp, "ingestion.db")
+          os.environ["GOZ_IHALE_SCAN_DB"] = os.path.join(temp, "scan.db")
+          from app.collector.runner import run_source
 
-          page = "https://khgm.saglik.gov.tr/TR-119527/ihale-duyurulari.html"
-          adapter = OfficialHTMLAdapter("KHGM Merkezi Satın Alma", page, "khgm.saglik.gov.tr")
-          candidates = adapter.collect()
-          relevant = screen_many(candidates)
-          print(f"Live official listing fetched: {len(candidates)} links; {len(relevant)} ophthalmology-relevant candidates")
-          for item in relevant[:10]:
-              print(item["title"], item["source_url"])
-          if not candidates:
-              raise SystemExit("Official listing returned no candidate links.")
+          result = run_source("khgm_central_notices")
+          metrics = result.get("metrics", {})
+          print(f"Live collector result: status={result.get('status')}, fetched={metrics.get('fetched_count', 0)}, relevant={metrics.get('relevant_count', 0)}, new={metrics.get('new_count', 0)}")
+          if result.get("status") not in {"success", "success_empty"} or metrics.get("fetched_count", 0) < 1:
+              raise SystemExit("Official source collection did not pass the live smoke test.")
           PY
