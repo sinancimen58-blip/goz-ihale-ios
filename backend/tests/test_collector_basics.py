@@ -194,3 +194,14 @@ def test_ingestion_cross_source_duplicate_identity(monkeypatch, tmp_path):
     assert notices[0]['deadline'] == '2026-12-15'
     events = repo.list_events(fingerprint=one['fingerprint'])
     assert len(events) == 2
+
+
+def test_duplicate_identity_does_not_merge_different_dates(monkeypatch, tmp_path):
+    from app.collector import sqlite_repository as repo
+    monkeypatch.setattr(repo, 'DB_PATH', str(tmp_path / 'identity.sqlite'))
+    first = {'title':'OCT cihazı alımı','institution':'Örnek Hastane','publication_date':'2026-11-27','source_name':'Kaynak A'}
+    second = dict(first, publication_date='2026-12-02', source_name='Kaynak B')
+    a = repo.ingest(first)
+    b = repo.ingest(second)
+    assert a['fingerprint'] != b['fingerprint']
+    assert len(repo.list_notices()) == 2
