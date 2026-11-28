@@ -36,3 +36,7 @@ The collector writes notification candidates to a durable, deduplicated SQLite o
 - `GOZ_IHALE_TELEGRAM_CHAT_ID`
 
 Never commit these values. If either is missing, alerts remain queued and are not discarded. After configuration, each collection run attempts delivery; `GET /api/notification-status` reports only whether configuration is present and the outbox counts, and authenticated `POST /api/dispatch-alerts` retries queued messages. Failed delivery is retried on subsequent runs up to eight attempts. Verify tender deadlines and source documents independently.
+
+## Priority-notices API filtering
+
+`GET /api/priority-notices` returns a relevance/deadline-sorted shortlist and stable IDs for the iOS client. Optional case-insensitive substring filters: `q` (title, institution, category, summary, specification, source, status and notice ID), `category`, `city`, `status`, and `source_name`. The `limit` parameter is capped at 200; the endpoint screens at most 500 persisted notices per request.
