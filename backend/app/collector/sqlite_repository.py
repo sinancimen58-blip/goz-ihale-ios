@@ -203,7 +203,7 @@ def claim_pending_alerts(limit: int = 100):
         keys=[row["alert_key"] for row in rows]
         for key in keys:
             db.execute("UPDATE alert_outbox SET status='sending',claimed_at=CURRENT_TIMESTAMP WHERE alert_key=? AND status='pending'",(key,))
-        claimed=db.execute("SELECT alert_key,fingerprint,payload_json,priority,reason,attempts,next_attempt_at FROM alert_outbox WHERE status='sending' AND claimed_at>=datetime('now','-1 seconds') AND alert_key IN (" + ",".join("?" for _ in keys) + ") ORDER BY created_at,alert_key",keys).fetchall() if keys else []
+        claimed=db.execute("SELECT alert_key,fingerprint,payload_json,priority,reason,attempts,next_attempt_at FROM alert_outbox WHERE status='sending' AND alert_key IN (" + ",".join("?" for _ in keys) + ") ORDER BY created_at,alert_key",keys).fetchall() if keys else []
     return _decode_alert_rows(claimed)
 
 
