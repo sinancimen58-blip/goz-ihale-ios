@@ -44,6 +44,8 @@ jobs:
           os.environ["GOZ_IHALE_SCAN_DB"] = os.path.join(temp, "scan.db")
 
           from app.collector.runner import run_source
+          from app.collector.sqlite_repository import list_notices
+          from app.collector.scan_ledger import safe_source_url
 
           rows = []
           required = ("khgm_central_notices", "dmo")
@@ -65,6 +67,11 @@ jobs:
                   print(f"Required source probe failed: {key}")
                   break
 
+          notices = list_notices(100)
+          print(f"Persisted relevant notices in isolated SQLite: {len(notices)}")
+          for notice in notices[:20]:
+              print(f"Notice: {notice.get('title','')} | {notice.get('source_name','')} | {safe_source_url(notice.get('source_url')) or ''}")
+
           summary = os.environ.get("GITHUB_STEP_SUMMARY")
           if summary:
               with open(summary, "a", encoding="utf-8") as stream:
@@ -74,6 +81,17 @@ jobs:
                   stream.write("|---|---|---:|---:|---:|---:|---:|\n")
                   for row in rows:
                       stream.write(f"| {row['key']} | {row['status']} | {row['fetched']} | {row['relevant']} | {row['new']} | {row['updated']} | {row['unchanged']} |\n")
+                  stream.write("\n### Screened notices persisted in isolated CI SQLite\n\n")
+                  if not notices:
+                      stream.write("No relevant notices persisted in this run.\n")
+                  else:
+                      stream.write("| Notice | Source | Deadline | Official link |\n|---|---|---|---|\n")
+                      for notice in notices[:20]:
+                          title=str(notice.get('title') or '').replace('|','\\|')
+                          source=str(notice.get('source_name') or '').replace('|','\\|')
+                          deadline=str(notice.get('deadline') or '').replace('|','\\|')
+                          url=safe_source_url(notice.get('source_url')) or ''
+                          stream.write(f"| {title} | {source} | {deadline} | {url} |\n")
 
           for key in required:
               row = next((item for item in rows if item["key"] == key), None)

@@ -31,3 +31,18 @@ The priority-notices endpoint adds `days_remaining` and `urgency` fields to each
 - `GET /api/health` performs read-only SQLite checks across the API, ingestion, and scan-ledger stores and reports the latest recorded source outcomes.
 - A healthy storage result is **not** proof that live collection is configured or currently running. The response separates storage checks from `live_collection_configured` and the last recorded scan.
 - The notice count is capped at 500 for a lightweight diagnostic response.
+
+## Live-source milestone — 28 November 2026
+
+The official-source smoke workflow completed successfully on commit `2897376c3c153995d810f1c4b4a0cd23497812c4` (run [46109606139](https://github.com/sinancimen58-blip/goz-ihale-ios/actions/runs/46109606139)). The live probes reported:
+
+| Source | Status | Fetched links/candidates | Relevant screened | New in isolated run |
+|---|---|---:|---:|---:|
+| KHGM central notices | success | 187 | 1 | 1 |
+| DMO | success | 86 | 0 | 0 |
+| Pamukkale University hospital purchase | success | 151 | 0 | 0 |
+| KHGM supply page | adapter missing/invalid | 0 | 0 | 0 |
+| Dokuz Eylül hospital purchase | error | 0 | 0 | 0 |
+| EKAP | error | 0 | 0 | 0 |
+
+The one KHGM candidate was persisted as a new notice in the run's temporary SQLite database. These numbers are CI smoke evidence only: the temporary databases are discarded after the run, and the production VPS/API/health and Telegram delivery are still unverified.
