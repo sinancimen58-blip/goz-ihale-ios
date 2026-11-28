@@ -1,6 +1,6 @@
 # Live-source activation on the VPS
 
-The collector is opt-in. This helper configures only two reviewed public HTML sources (KHGM central notice listing and DMO), preserves unrelated .env entries, generates a write token if none exists, rebuilds the API and runs both sources immediately.
+The collector is opt-in. This helper configures three reviewed official HTML sources: KHGM central notices, DMO, and Pamukkale University Hospital procurement listings. It preserves unrelated .env entries, generates a write token if none exists, rebuilds Docker Compose and runs all three scans.
 
 From the repository backend folder on the VPS:
 
