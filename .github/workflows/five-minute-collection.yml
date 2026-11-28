@@ -1,0 +1,41 @@
+name: Five-minute live collection
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: goz-ihale-five-minute-collection
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Check required HTTPS configuration
+        env:
+          API_URL: ${{ secrets.GOZ_IHALE_API_URL }}
+          API_TOKEN: ${{ secrets.GOZ_IHALE_API_TOKEN }}
+        run: |
+          if [ -z "$API_URL" ] || [ -z "$API_TOKEN" ]; then
+            echo "HTTPS API URL/token secrets are missing; scan skipped."
+            exit 0
+          fi
+          case "$API_URL" in https://*) ;; *) echo "API_URL must use HTTPS"; exit 1;; esac
+      - name: Scan enabled source keys
+        env:
+          API_URL: ${{ secrets.GOZ_IHALE_API_URL }}
+          API_TOKEN: ${{ secrets.GOZ_IHALE_API_TOKEN }}
+        run: |
+          if [ -z "$API_URL" ] || [ -z "$API_TOKEN" ]; then exit 0; fi
+          set -e
+          for key in khgm_central_notices dmo; do
+            echo "Scanning $key"
+            curl --fail --silent --show-error --max-time 90 \
+              -X POST "$API_URL/api/run-source/$key" \
+              -H "X-Goz-Ihale-Token: $API_TOKEN" \
+              -H "Content-Type: application/json"
+            echo
+          done
