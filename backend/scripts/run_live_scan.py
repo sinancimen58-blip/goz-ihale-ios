@@ -56,7 +56,15 @@ def main():
             print(f"Source run failed: {key}",file=sys.stderr)
             return 1
     summary=request_json(base+"/api/scan-summary")
+    notices=request_json(base+"/api/priority-notices?limit=200")
+    notification_status=request_json(base+"/api/notification-status")
+    if not isinstance(notices,list):
+        print("Priority notices endpoint returned an unexpected payload.",file=sys.stderr)
+        return 2
+    outbox=notification_status.get("outbox",{})
     print(f"Scan ledger: {summary.get('sources_with_runs',0)} sources with runs; {summary.get('latest_status_counts',{})}")
+    print(f"Priority notices API: {len(notices)} records returned")
+    print(f"Telegram configured: {bool(notification_status.get('telegram_configured'))}; outbox: {outbox}")
     return 0
 
 if __name__=="__main__":
