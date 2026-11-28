@@ -50,3 +50,22 @@ The KHGM candidate was persisted as a new notice in the isolated run's temporary
 ## iOS API-health milestone — 28 November 2026
 
 The SwiftUI Settings connection test now calls `GET /api/health`, reports whether live-source configuration exists, and loads the notice list after a healthy response. The iOS simulator build passed on commit `665b94f790a63d51916c470558a683fcef0dda6c` ([workflow run 46112272506](https://github.com/sinancimen58-blip/goz-ihale-ios/actions/runs/46112272506)). This is a simulator build only; no real HTTPS production API URL or physical-device test has been verified.
+
+
+## Production VPS deployment milestone — 28 November 2026 (verified)
+
+Commit `89ee923bfdb3f1c6049c0d0b1f5cd65a00a1a54e` was deployed to the VPS successfully by workflow [46129347949](https://github.com/sinancimen58-blip/goz-ihale-ios/actions/runs/46129347949). The deploy job completed successfully and its remote post-deploy checks returned API health `ok` with primary, ingestion, and scan-ledger SQLite checks all `ok`.
+
+The remote live scan verified:
+
+| Source | Status | Fetched | Relevant | New/updated |
+|---|---|---:|---:|---:|
+| KHGM central notices | success | 187 | 1 | 0 new; 0 updated (1 unchanged) |
+| DMO | success | 86 | 0 | 0 |
+| Pamukkale University hospital purchase | success | 151 | 0 | 0 |
+
+The production priority-notices endpoint returned 1 persisted record. The scan ledger showed 3 sources with latest status success. Weekday scans at 09:00 and 17:00 Europe/Istanbul were installed by the deployment script.
+
+Telegram delivery is **not configured** on the VPS: the notification status reported `telegram_configured=false`, with 1 pending outbox item, 0 sending, 0 sent, and 0 failed. Telegram bot token and chat ID must be configured in the VPS environment, never in the repository or iOS app.
+
+The API is bound to loopback (`127.0.0.1:8000`) on the VPS. Public HTTPS access and physical iOS connectivity are **not verified** and require a domain/DNS or an approved tunnel plus TLS configuration. Do not treat the successful localhost health check as public HTTPS readiness.
