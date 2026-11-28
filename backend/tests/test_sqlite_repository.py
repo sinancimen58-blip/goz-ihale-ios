@@ -88,3 +88,20 @@ def test_outbox_failure_schedules_backoff_and_excludes_not_due_alert(tmp_path, m
     assert repo.retry_delay_seconds(0)==60
     assert repo.retry_delay_seconds(5)==1920
     assert repo.retry_delay_seconds(8)==3600
+
+
+def test_outbox_claim_is_atomic_and_stale_lease_recovers(tmp_path, monkeypatch):
+    setup(tmp_path, monkeypatch)
+    repo.ingest(sample())
+    first=repo.claim_pending_alerts()
+    assert len(first)==1
+    assert first[0]["payload"]["title"]=="OCT cihazı alımı"
+    assert repo.claim_pending_alerts()==[]
+    with repo.connection() as db:
+        db.execute("UPDATE alert_outbox SET claimed_at=datetime('now', '-11 minutes') WHERE alert_key=?",(first[0]["alert_key"],))
+    recovered=repo.claim_pending_alerts()
+    assert len(recovered)==1
+    assert recovered[0]["alert_key"]==first[0]["alert_key"]
+    repo.mark_alert_delivery(recovered[0]["alert_key"],True)
+    assert repo.notification_counts()["sent"]==1
+    assert repo.notification_counts()["sending"]==0
