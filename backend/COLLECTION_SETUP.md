@@ -35,11 +35,13 @@ Configure the following only when the official portal offers a verified public f
 
 Inspect `/api/health`, `/api/sources`, `/api/scan-summary`, `/api/collected-notices`, and `/api/priority-notices`. Verify source links and deadlines; HTML list extraction does not replace manual review of official documents and attachments.
 
-## Current probe status (27 Nov 2026)
+## Current probe status (28 Nov 2026)
+
+The latest completed probe is [GitHub Actions run 46112337925](https://github.com/sinancimen58-blip/goz-ihale-ios/actions/runs/46112337925):
 
 - KHGM central: 187 links fetched, 1 relevant, 1 new notice in an ephemeral CI database.
 - Pamukkale University Hospital: 151 links fetched, 0 relevant in the current probe.
-- DMO: 92 links fetched, 0 relevant in the current probe.
+- DMO: 86 links fetched, 0 relevant in the current probe.
 - EKAP: probe failed; keep disabled.
 - Dokuz Eylül: network probe failed; keep disabled.
 - KHGM Supply: adapter/configuration missing or invalid; keep disabled.
