@@ -19,3 +19,6 @@ After the run, inspect:
 - `/api/priority-notices`
 
 The script does not configure a public HTTPS domain, iOS signing, push-notification credentials or GitHub Actions secrets. Those remain separate deployment tasks. Do not expose the write token or the plain HTTP API to the internet.
+
+
+Each scheduled live scan also checks the Telegram outbox. If server-side Telegram credentials are configured, it calls the protected `/api/dispatch-alerts` endpoint to attempt delivery of retained alerts and prints delivery counts. If credentials are absent, it skips dispatch and reports the retained pending count; no alert is discarded. The scheduled runner never prints token or chat-ID values.
