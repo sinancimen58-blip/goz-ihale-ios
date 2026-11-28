@@ -4,7 +4,7 @@
 - API and iOS prototype are in the repository.
 - SQLite persistence, ingestion event log, source catalog, scan ledger, relevance scoring, deadline parsing and urgency labels exist.
 - CI live-source smoke tests have fetched and screened official pages in isolated runs. The scheduled production collection workflow remains a framework: it needs a persistent HTTPS API URL and write token, and its remote sources must be explicitly configured and enabled.
-- iOS is not yet built or tested in Xcode or on a physical device.
+- The iOS simulator build passed in CI; physical-device testing and a connection to a deployed HTTPS API remain unverified.
 
 ## Before public deployment
 1. Configure verified official feeds/API endpoints, one source at a time.
@@ -34,7 +34,7 @@ The priority-notices endpoint adds `days_remaining` and `urgency` fields to each
 
 ## Live-source milestone — 28 November 2026
 
-The official-source smoke workflow completed successfully on commit `2897376c3c153995d810f1c4b4a0cd23497812c4` (run [46109606139](https://github.com/sinancimen58-blip/goz-ihale-ios/actions/runs/46109606139)). The live probes reported:
+The latest official-source smoke workflow completed successfully on commit `394d365a9fe580414bac4ee3e0bf4912d94cb998` (run [46112337925](https://github.com/sinancimen58-blip/goz-ihale-ios/actions/runs/46112337925)). The live probes reported:
 
 | Source | Status | Fetched links/candidates | Relevant screened | New in isolated run |
 |---|---|---:|---:|---:|
@@ -45,7 +45,7 @@ The official-source smoke workflow completed successfully on commit `2897376c3c1
 | Dokuz Eylül hospital purchase | error | 0 | 0 | 0 |
 | EKAP | error | 0 | 0 | 0 |
 
-The one KHGM candidate was persisted as a new notice in the run's temporary SQLite database. These numbers are CI smoke evidence only: the temporary databases are discarded after the run, and the production VPS/API/health and Telegram delivery are still unverified.
+The KHGM candidate was persisted as a new notice in the isolated run's temporary SQLite database. The successful smoke verifies live HTML collection, relevance screening, and persistence for that CI run; it does not prove durable VPS storage. CI databases are discarded after the run, and the production VPS/API/health and Telegram delivery remain unverified.
 
 ## iOS API-health milestone — 28 November 2026
 
