@@ -39,3 +39,12 @@ def test_noise_phrases_do_not_override_procurement_categories_silently():
 def test_score_is_bounded():
     result = relevance_score("OCT fako tonometre optik biyometri YAG SLT topografi fundus mikroskop ihale zeyilname")
     assert 0 <= result["score"] <= 100
+
+
+def test_specific_device_matches_raise_score_and_are_grouped():
+    broad = relevance_score("Göz poliklinik sistemi alımı")
+    specific = relevance_score("OCT cihazı alımı")
+    aliases = relevance_score("OCT-A OCT retina duo alımı")
+    assert broad["is_relevant"] and specific["is_relevant"]
+    assert specific["score"] > broad["score"]
+    assert aliases["specificity_matches"].count("OCT") == 1

@@ -1,4 +1,4 @@
-"""Alert policy helper; delivery channels are not connected yet."""
+"""Alert policy helper for persistent outbox delivery."""
 from dataclasses import dataclass
 
 @dataclass(frozen=True)
@@ -11,7 +11,11 @@ HIGH_PRIORITY_TERMS = ("zeyilname", "iptal", "tarih değiş", "son başvuru", "s
 
 def decide_alert(action: str, changed_fields: list[str] | None = None, text: str = "", score: int = 0) -> AlertDecision:
     if action == "new":
-        if score >= 75: return AlertDecision(True, "Yeni yüksek önem seviyeli ilan", "high")
+        if score >= 75:
+            return AlertDecision(True, "Yeni yüksek önem seviyeli ilan", "high")
+        if score < 25:
+            # Keep low-confidence candidates visible; don't silently drop procurement leads.
+            return AlertDecision(True, "Yeni düşük ilgililik seviyeli ilan", "low")
         return AlertDecision(True, "Yeni ilan", "normal")
     if action == "updated":
         haystack=(text or "").casefold()
