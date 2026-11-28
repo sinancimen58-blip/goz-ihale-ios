@@ -69,3 +69,8 @@ The production priority-notices endpoint returned 1 persisted record. The scan l
 Telegram delivery is **not configured** on the VPS: the notification status reported `telegram_configured=false`, with 1 pending outbox item, 0 sending, 0 sent, and 0 failed. Telegram bot token and chat ID must be configured in the VPS environment, never in the repository or iOS app.
 
 The API is bound to loopback (`127.0.0.1:8000`) on the VPS. Public HTTPS access and physical iOS connectivity are **not verified** and require a domain/DNS or an approved tunnel plus TLS configuration. Do not treat the successful localhost health check as public HTTPS readiness.
+
+
+## Telegram configuration helper — 28 November 2026
+
+Added `backend/scripts/configure_telegram.sh`, an interactive VPS-only helper that reads the Telegram bot token without echo, validates a numeric chat ID, replaces the Telegram entries in `.env` atomically, restricts `.env` to mode 600, recreates the API service and confirms the configuration through the loopback API. It deliberately does not send a test message or dispatch the pending outbox during setup. CI now validates its shell syntax. Real Telegram delivery remains unverified until the owner configures credentials on the VPS.
