@@ -13,14 +13,14 @@ class SourceDefinition:
 
 # Planning and runner registry. Metadata only: no network access occurs from this list.
 SOURCES = [
-    SourceDefinition("ekap", "EKAP", "national", "https://ekap.kik.gov.tr/ekap/ilan/bultenindirme.aspx", notes="Official public procurement bulletin listing; adapter probe currently unsuccessful"),
+    SourceDefinition("ekap", "EKAP", "national", "https://ekap.kik.gov.tr/ekap/ilan/bultenindirme.aspx", notes="Official public procurement bulletin; live smoke probe failed 2026-11-28, so other sources remain the fallback."),
     SourceDefinition("kik", "Kamu İhale Kurumu", "national", "https://www.ihale.gov.tr/", notes="KİK official information portal"),
-    SourceDefinition("dmo", "Devlet Malzeme Ofisi", "national", "https://www.dmo.gov.tr/Ihale/Liste?type=1", notes="Publicly accessible live tender listing; relevance probe currently yielded no ophthalmology candidates"),
-    SourceDefinition("khgm_central", "Sağlık Bakanlığı Kamu Hastaneleri Genel Müdürlüğü", "agency", "https://khgm.saglik.gov.tr/", notes="Central procurement and hospital purchasing announcements; endpoint review pending"),
-    SourceDefinition("khgm_central_notices", "KHGM Merkezi Satın Alma İhale Duyuruları", "agency", "https://khgm.saglik.gov.tr/TR-119527/ihale-duyurulari.html", notes="Dedicated central purchasing notice page; adapter review pending"),
-    SourceDefinition("khgm_supply", "KHGM Tedarik Yöntemleri ve Satın Alma Daire Başkanlığı", "agency", "https://khgmsatinalmadb.saglik.gov.tr/", notes="Separate procurement portal and central medical device purchase notices; adapter review pending"),
-    SourceDefinition("deu_hospital_purchase", "Dokuz Eylül Üniversitesi Hastane Satın Alma", "university_hospital", "https://hastane2.deu.edu.tr/satin-alma/", notes="Official hospital procurement listing; adapter readiness to be verified"),
-    SourceDefinition("pau_hospital_purchase", "Pamukkale Üniversitesi Hastane Satın Alma", "university_hospital", "https://www.pau.edu.tr/ihale/tr", notes="Official hospital procurement listing; adapter readiness to be verified"),
+    SourceDefinition("dmo", "Devlet Malzeme Ofisi", "national", "https://www.dmo.gov.tr/Ihale/Liste?type=1", notes="Public official listing; live HTML smoke passed 2026-11-28, but that run screened no ophthalmology candidates."),
+    SourceDefinition("khgm_central", "Sağlık Bakanlığı Kamu Hastaneleri Genel Müdürlüğü", "agency", "https://khgm.saglik.gov.tr/", notes="Central procurement and hospital purchasing announcements; source discovery entry point."),
+    SourceDefinition("khgm_central_notices", "KHGM Merkezi Satın Alma İhale Duyuruları", "agency", "https://khgm.saglik.gov.tr/TR-119527/ihale-duyurulari.html", notes="Dedicated official central purchasing page; live HTML smoke passed 2026-11-28 and screened one relevant notice."),
+    SourceDefinition("khgm_supply", "KHGM Tedarik Yöntemleri ve Satın Alma Daire Başkanlığı", "agency", "https://khgmsatinalmadb.saglik.gov.tr/", notes="Separate procurement portal; live smoke could not configure the adapter on 2026-11-28, so no request was made."),
+    SourceDefinition("deu_hospital_purchase", "Dokuz Eylül Üniversitesi Hastane Satın Alma", "university_hospital", "https://hastane2.deu.edu.tr/satin-alma/", notes="Official hospital purchase listing; live smoke probe returned an error on 2026-11-28."),
+    SourceDefinition("pau_hospital_purchase", "Pamukkale Üniversitesi Hastane Satın Alma", "university_hospital", "https://www.pau.edu.tr/ihale/tr", notes="Official hospital purchase listing; live HTML smoke passed 2026-11-28, but that run screened no ophthalmology candidates."),
     SourceDefinition("ushas", "USHAŞ Tedarik Yönetim Sistemi", "agency", "https://www.ushas.gov.tr/tedarik-yonetim-sistemi/", notes="Supplier portal and online procurement; adapter/authentication review pending"),
     SourceDefinition("kizilay", "Türk Kızılay İhale İlanları", "institution", "https://www.kizilay.org.tr/IhaleIlanlari", notes="Direct supplier portal may be required; not governed by public procurement law"),
     SourceDefinition("kizilay_logistics", "Kızılay Lojistik İhale Duyuruları", "institution", "https://kizilaylojistik.com.tr/ihale-duyurulari", notes="Separate logistics purchasing announcements"),

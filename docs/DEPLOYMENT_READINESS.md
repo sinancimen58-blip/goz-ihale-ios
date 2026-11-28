@@ -46,3 +46,7 @@ The official-source smoke workflow completed successfully on commit `2897376c3c1
 | EKAP | error | 0 | 0 | 0 |
 
 The one KHGM candidate was persisted as a new notice in the run's temporary SQLite database. These numbers are CI smoke evidence only: the temporary databases are discarded after the run, and the production VPS/API/health and Telegram delivery are still unverified.
+
+## iOS API-health milestone — 28 November 2026
+
+The SwiftUI Settings connection test now calls `GET /api/health`, reports whether live-source configuration exists, and loads the notice list after a healthy response. The iOS simulator build passed on commit `665b94f790a63d51916c470558a683fcef0dda6c` ([workflow run 46112272506](https://github.com/sinancimen58-blip/goz-ihale-ios/actions/runs/46112272506)). This is a simulator build only; no real HTTPS production API URL or physical-device test has been verified.
