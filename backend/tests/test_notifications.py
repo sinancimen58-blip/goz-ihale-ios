@@ -19,7 +19,7 @@ def test_dispatch_marks_success_and_failure(monkeypatch):
     monkeypatch.setenv("GOZ_IHALE_TELEGRAM_CHAT_ID","fake-chat")
     pending=[{"alert_key":"a","payload":{"title":"FIRST_NOTICE"},"priority":"high","reason":"new"},{"alert_key":"b","payload":{"title":"SECOND_NOTICE"},"priority":"normal","reason":"new"}]
     marked=[]
-    monkeypatch.setattr(notifications,"list_pending_alerts",lambda limit:pending)
+    monkeypatch.setattr(notifications,"claim_pending_alerts",lambda limit:pending)
     monkeypatch.setattr(notifications,"send_telegram",lambda message:{"success":"FIRST_NOTICE" in message})
     monkeypatch.setattr(notifications,"mark_alert_delivery",lambda key,success,error:marked.append((key,success)))
     monkeypatch.setattr(notifications,"notification_counts",lambda:{"pending":0,"sent":1,"failed":1})
