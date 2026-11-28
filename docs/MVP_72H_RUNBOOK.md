@@ -5,14 +5,14 @@ Goal: deliver a usable iPhone MVP backed by real, verified procurement notices. 
 ## Definition of done
 - API deployed over HTTPS with persistent storage and write-token protected collection endpoints.
 - At least 2-3 permitted, reachable official sources configured and live-tested; no source is marked live until the scan log confirms it.
-- Relevant notices filtered, normalized, deduplicated, persisted, and ranked.
-- iOS app loads /api/priority-notices from the deployed API and displays source links and deadline urgency.
+- Relevant notices filtered, normalized, deduplicated, persisted, ranked and source provenance retained.
+- iOS app loads `/api/priority-notices` from the deployed API and displays source links and deadline urgency.
 - Scheduled collection is enabled only after HTTPS and server-side token configuration are verified.
 - CI is green; deployment and source scan status are recorded.
 
 ## Sprint order
 1. **Backend/deploy:** Docker, reverse proxy/HTTPS, persistent DB, health checks, token configuration.
-2. **Source discovery:** reviewed official HTML/RSS adapters; start with KHGM and DMO, then add more only after a successful probe.
+2. **Source discovery:** reviewed official HTML/RSS adapters; start with KHGM and DMO, then add a third source after a successful probe.
 3. **Data quality:** screen ophthalmology terms, normalize fields, deduplicate, preserve provenance, record run failures.
 4. **iOS:** use Settings to configure the HTTPS API; smoke-test list, refresh, favorite, search, and source link.
 5. **Automation:** enable scheduled scans after API endpoint/token are safely configured in GitHub Actions secrets or server environment.
@@ -20,7 +20,7 @@ Goal: deliver a usable iPhone MVP backed by real, verified procurement notices. 
 
 ## First live-source activation
 
-From the backend folder on the VPS, run `bash scripts/enable_live_collection.sh`. It configures only the two reviewed sources, preserves existing .env entries, creates a write token if needed, rebuilds Docker Compose and runs both scans. It installs weekday 09:00/17:00 Europe/Istanbul cron only when root and an active cron service are available. Turkish public holidays are not automatically skipped. Details: `backend/LIVE_COLLECTION_RUNBOOK.md`.
+From the backend folder on the VPS, run `bash scripts/enable_live_collection.sh`. It configures KHGM central notices, DMO, and Pamukkale University Hospital procurement listing, preserves existing .env entries, creates a write token if needed, rebuilds Docker Compose and runs the three scans. It installs weekday 09:00/17:00 Europe/Istanbul cron only when root and an active cron service are available. Turkish public holidays are not automatically skipped. Details: `backend/LIVE_COLLECTION_RUNBOOK.md`.
 
 ## Required server-side environment
 - GOZ_IHALE_API_WRITE_TOKEN: strong random secret; never commit it.
