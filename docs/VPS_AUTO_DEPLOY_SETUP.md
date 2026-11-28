@@ -33,3 +33,15 @@ Workflow file: `.github/workflows/deploy-vps.yml`.
 When a key pair is generated on the VPS, copy only the **public** key (the file ending in `.pub`) into the selected account's `authorized_keys`. Keep the private key on the VPS until it is securely copied into the GitHub Actions secret `DEPLOY_SSH_KEY`; never send it in chat or commit it. `DEPLOY_USER` must match the account that accepts the public key, and `DEPLOY_PATH` must be the existing repository checkout.
 
 The workflow's run summary explicitly distinguishes a successful test run from a skipped remote deployment. A green CI result alone does not mean the VPS was updated.
+
+
+## Configure Telegram on the VPS (without sharing secrets)
+
+After the latest deployment, run this on the VPS in the repository checkout:
+
+```bash
+cd /opt/goz-ihale-ios/backend
+sudo bash scripts/configure_telegram.sh
+```
+
+The helper prompts for the bot token without echoing it and for a numeric chat ID, replaces only the two Telegram entries in `backend/.env`, writes the file with mode 600, recreates the API container, and verifies `telegram_configured` through the loopback notification-status endpoint. It does not send a test message or drain the outbox immediately. The next scheduled scan will attempt delivery of pending alerts. Never paste the bot token into chat, issue trackers, or Git.
