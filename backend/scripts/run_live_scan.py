@@ -6,7 +6,7 @@ from urllib.error import HTTPError, URLError
 import json, sys, time
 
 BACKEND_DIR=Path(__file__).resolve().parents[1]
-SOURCE_KEYS=("khgm_central_notices","dmo")
+SOURCE_KEYS=("khgm_central_notices","dmo","pau_hospital_purchase")
 
 def read_env(path):
     values={}
