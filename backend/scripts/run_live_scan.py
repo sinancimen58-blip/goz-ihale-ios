@@ -35,13 +35,13 @@ def main():
     port=env.get("GOZ_IHALE_PORT","8000")
     base=f"http://127.0.0.1:{port}"
     health=None
-    for attempt in range(10):
+    for attempt in range(30):
         try:
             health=request_json(base+"/api/health")
             if health.get("status")=="ok":
                 break
-        except (HTTPError,URLError,TimeoutError):
-            if attempt==9:
+        except (HTTPError,URLError,TimeoutError,OSError,ValueError):
+            if attempt==29:
                 raise
             time.sleep(2)
     if not health or health.get("status")!="ok":
@@ -62,6 +62,6 @@ def main():
 if __name__=="__main__":
     try:
         raise SystemExit(main())
-    except (HTTPError,URLError,TimeoutError) as exc:
+    except (HTTPError,URLError,TimeoutError,OSError,ValueError) as exc:
         print(f"API request failed: {type(exc).__name__}",file=sys.stderr)
         raise SystemExit(2)
