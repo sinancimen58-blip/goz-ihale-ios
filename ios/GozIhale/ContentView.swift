@@ -25,7 +25,7 @@ final class TenderViewModel: ObservableObject {
     @Published var serverURL: String = UserDefaults.standard.string(forKey: "gozihale_server") ?? ""
     @Published var favorites: Set<String> = Set(UserDefaults.standard.stringArray(forKey: "gozihale_favorites") ?? [])
 
-    func load() async {
+    func load(query: String? = nil, category: String? = nil) async {
         let trimmedServerURL = serverURL.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedServerURL.isEmpty else {
             errorMessage = "Önce Ayarlar bölümünden HTTPS API adresini girin."
@@ -44,7 +44,16 @@ final class TenderViewModel: ObservableObject {
         loading = true; errorMessage = nil
         defer { loading = false }
         do {
-            var url = base; url.append(path: "api/priority-notices")
+            var components = URLComponents(url: base.appending(path: "api/priority-notices"), resolvingAgainstBaseURL: false)
+            var items: [URLQueryItem] = []
+            if let query, !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                items.append(URLQueryItem(name: "q", value: query))
+            }
+            if let category, !category.isEmpty {
+                items.append(URLQueryItem(name: "category", value: category))
+            }
+            components?.queryItems = items.isEmpty ? nil : items
+            guard let url = components?.url else { throw URLError(.badURL) }
             let (data, response) = try await URLSession.shared.data(from: url)
             guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.badServerResponse) }
             tenders = try JSONDecoder().decode([Tender].self, from: data)
@@ -105,8 +114,12 @@ struct ContentView: View {
                 }
                 .navigationTitle("Ana Sayfa")
                 .searchable(text: $searchText, prompt: "Cihaz, hastane veya şehir")
-                .toolbar { ToolbarItem(placement: .topBarTrailing) { Button { Task { await model.load() } } label: { Image(systemName: "arrow.clockwise") } } }
-                .task { await model.load() }
+                .toolbar { ToolbarItem(placement: .topBarTrailing) { Button { Task { await model.load(query: searchText, category: selectedCategory) } } label: { Image(systemName: "arrow.clockwise") } } }
+                .task(id: searchText + "|" + (selectedCategory ?? "")) {
+                    try? await Task.sleep(nanoseconds: 350_000_000)
+                    guard !Task.isCancelled else { return }
+                    await model.load(query: searchText, category: selectedCategory)
+                }
             }.tabItem { Label("Ana Sayfa", systemImage: "house") }.tag(0)
 
             NavigationStack {
@@ -134,8 +147,8 @@ struct ContentView: View {
                         TextField("Sunucu URL", text: $model.serverURL)
                             .textInputAutocapitalization(.never).autocorrectionDisabled()
                         Text("Örnek: https://api.ornek.com — HTTP adresleri kabul edilmez.").font(.footnote).foregroundStyle(.secondary)
-                        Button("Adresi kaydet ve bağlan") { model.saveServer(); Task { await model.load() } }
-                        Button("Bağlantıyı test et") { Task { await model.load() } }
+                        Button("Adresi kaydet ve bağlan") { model.saveServer(); Task { await model.load(query: searchText, category: selectedCategory) } }
+                        Button("Bağlantıyı test et") { Task { await model.load(query: searchText, category: selectedCategory) } }
                     }
                     Section("Durum") {
                         Text("API prototipine bağlanabilir. Sunucunun internet üzerinden erişilebilir olması gerekir.")
