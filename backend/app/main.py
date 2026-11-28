@@ -247,9 +247,21 @@ def source_search_plan():
     return {'count':len(plan),'plans':plan,'live_search':False}
 
 @app.get("/api/priority-notices", tags=["collection"])
-def priority_notices(limit: int = 50):
-    """Convenience shortlist ordered by relevance and deadline presence."""
-    rows=list_collected_notices(limit)
+def priority_notices(limit: int = 50, q: str | None = None, category: str | None = None,
+                     city: str | None = None, status: str | None = None,
+                     source_name: str | None = None):
+    """Search and filter the persisted shortlist; filters are case-insensitive substring matches."""
+    rows=list_collected_notices(500)
+    filters={key:value.strip().casefold() for key,value in
+             {"category":category,"city":city,"status":status,"source_name":source_name}.items()
+             if value and value.strip()}
+    search=q.strip().casefold() if q and q.strip() else None
+    if search:
+        fields=("title","institution","city","category","summary","specification",
+                "source_name","procurement_method","status","notice_id")
+        rows=[row for row in rows if search in " ".join(str(row.get(field) or "") for field in fields).casefold()]
+    for field,value in filters.items():
+        rows=[row for row in rows if value in str(row.get(field) or "").casefold()]
     rows.sort(key=lambda row: (
         -int(row.get("relevance_score") or 0),
         row.get("deadline") is None,
