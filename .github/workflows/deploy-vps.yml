@@ -40,6 +40,7 @@ jobs:
           set -euo pipefail
           python -m compileall -q backend/app backend/scripts
           bash -n backend/scripts/enable_live_collection.sh
+          bash -n backend/scripts/configure_telegram.sh
 
       - name: Validate Docker Compose and build image
         run: |
