@@ -74,3 +74,17 @@ def test_outbox_failure_retries_then_stops(tmp_path, monkeypatch):
         repo.mark_alert_delivery(item["alert_key"],False,"test failure")
     assert repo.list_pending_alerts()==[]
     assert repo.notification_counts()["failed"]==1
+
+
+def test_outbox_failure_schedules_backoff_and_excludes_not_due_alert(tmp_path, monkeypatch):
+    setup(tmp_path, monkeypatch)
+    repo.ingest(sample())
+    item=repo.list_pending_alerts()[0]
+    repo.mark_alert_delivery(item["alert_key"],False,"temporary failure")
+    assert repo.list_pending_alerts()==[]
+    with repo.connection() as db:
+        db.execute("UPDATE alert_outbox SET next_attempt_at=datetime('now', '-1 minute') WHERE alert_key=?",(item["alert_key"],))
+    assert len(repo.list_pending_alerts())==1
+    assert repo.retry_delay_seconds(0)==60
+    assert repo.retry_delay_seconds(5)==1920
+    assert repo.retry_delay_seconds(8)==3600
