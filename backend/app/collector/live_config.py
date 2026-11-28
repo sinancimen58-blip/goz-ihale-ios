@@ -1,13 +1,14 @@
-"""Idempotent server .env setup for the two reviewed official HTML sources."""
+"""Idempotent server .env setup for three reviewed official HTML sources."""
 from pathlib import Path
 import secrets
 
 VALUES = {
     "GOZ_IHALE_PORT": "8000",
-    "GOZ_IHALE_ENABLED_SOURCE_KEYS": "khgm_central_notices,dmo",
-    "GOZ_IHALE_HTML_SOURCE_KEYS": "khgm_central_notices,dmo",
+    "GOZ_IHALE_ENABLED_SOURCE_KEYS": "khgm_central_notices,dmo,pau_hospital_purchase",
+    "GOZ_IHALE_HTML_SOURCE_KEYS": "khgm_central_notices,dmo,pau_hospital_purchase",
     "GOZ_IHALE_HTML_PAGE_KHGM_CENTRAL_NOTICES": "https://khgm.saglik.gov.tr/TR-119527/ihale-duyurulari.html",
     "GOZ_IHALE_HTML_PAGE_DMO": "https://www.dmo.gov.tr/Ihale/Liste?type=1",
+    "GOZ_IHALE_HTML_PAGE_PAU_HOSPITAL_PURCHASE": "https://www.pau.edu.tr/ihale/tr",
 }
 
 TOKEN_KEY = "GOZ_IHALE_API_WRITE_TOKEN"
@@ -57,7 +58,7 @@ def configure_env_file(path: str | Path) -> bool:
 def main():
     path = Path(__file__).resolve().parents[2] / ".env"
     generated = configure_env_file(path)
-    print(f"Configured {path} for KHGM central notices and DMO.")
+    print(f"Configured {path} for KHGM central notices, DMO and Pamukkale University Hospital.")
     print("Write token generated." if generated else "Existing write token preserved.")
 
 if __name__ == "__main__":
