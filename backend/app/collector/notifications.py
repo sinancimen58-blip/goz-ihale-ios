@@ -3,7 +3,7 @@ import json
 import os
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
-from .sqlite_repository import list_pending_alerts, mark_alert_delivery, notification_counts
+from .sqlite_repository import claim_pending_alerts, mark_alert_delivery, notification_counts
 
 def telegram_configured() -> bool:
     return bool(os.getenv("GOZ_IHALE_TELEGRAM_BOT_TOKEN") and os.getenv("GOZ_IHALE_TELEGRAM_CHAT_ID"))
@@ -48,7 +48,7 @@ def dispatch_pending_telegram(limit: int = 100) -> dict:
         return {"configured":False,"sent":0,"failed":0,"pending":counts["pending"],"message":"Telegram credentials are not configured; outbox is retained."}
     sent=0
     failed=0
-    for item in list_pending_alerts(limit):
+    for item in claim_pending_alerts(limit):
         message=format_notice(item.get("payload") or {},item.get("priority","normal"),item.get("reason",""))
         result=send_telegram(message)
         mark_alert_delivery(item["alert_key"],result.get("success",False),result.get("error"))
