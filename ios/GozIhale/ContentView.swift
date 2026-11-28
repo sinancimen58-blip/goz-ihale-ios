@@ -1,5 +1,18 @@
 import SwiftUI
 
+struct APIHealth: Codable {
+    let status: String
+    let live_collection_configured: Bool
+    let sources_with_runs: Int
+    let latest_scan: LatestScan?
+}
+
+struct LatestScan: Codable {
+    let source_key: String?
+    let status: String?
+    let finished_at: String?
+}
+
 struct Tender: Identifiable, Codable {
     let id: String
     let title: String
@@ -22,6 +35,8 @@ final class TenderViewModel: ObservableObject {
     @Published var tenders: [Tender] = []
     @Published var loading = false
     @Published var errorMessage: String?
+    @Published var connectionStatus: String?
+    @Published var connectionTesting = false
     @Published var serverURL: String = UserDefaults.standard.string(forKey: "gozihale_server") ?? ""
     @Published var favorites: Set<String> = Set(UserDefaults.standard.stringArray(forKey: "gozihale_favorites") ?? [])
 
@@ -61,6 +76,45 @@ final class TenderViewModel: ObservableObject {
             errorMessage = "HTTPS API erişilemedi veya yanıt biçimi uyumsuz. Sunucu adresini ve API durumunu kontrol edin."
         }
     }
+    func testConnection() async {
+        let trimmedServerURL = serverURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedServerURL.isEmpty else {
+            connectionStatus = "Önce HTTPS API adresini girin."
+            return
+        }
+        guard let base = URL(string: trimmedServerURL),
+              base.scheme?.lowercased() == "https",
+              base.host != nil,
+              base.user == nil,
+              base.password == nil,
+              base.query == nil,
+              base.fragment == nil else {
+            connectionStatus = "Geçerli, kullanıcı bilgisi içermeyen HTTPS adresi gerekli."
+            return
+        }
+        connectionTesting = true
+        connectionStatus = nil
+        defer { connectionTesting = false }
+        do {
+            let url = base.appending(path: "api/health")
+            let (data, response) = try await URLSession.shared.data(from: url)
+            guard (response as? HTTPURLResponse)?.statusCode == 200 else {
+                throw URLError(.badServerResponse)
+            }
+            let health = try JSONDecoder().decode(APIHealth.self, from: data)
+            guard health.status == "ok" else { throw URLError(.cannotParseResponse) }
+            var message = "API ve SQLite sağlık kontrolü başarılı."
+            message += health.live_collection_configured ? " Canlı kaynak yapılandırması mevcut." : " Canlı kaynak yapılandırması bulunmuyor."
+            if let latest = health.latest_scan, let status = latest.status {
+                message += " Son tarama: \(status)."
+            }
+            connectionStatus = message
+            await load(query: nil, category: nil)
+        } catch {
+            connectionStatus = "HTTPS API sağlık kontrolü başarısız. Sunucu adresini ve API durumunu kontrol edin."
+        }
+    }
+
     func saveServer() { UserDefaults.standard.set(serverURL, forKey: "gozihale_server") }
     func toggleFavorite(_ id: String) {
         if favorites.contains(id) { favorites.remove(id) } else { favorites.insert(id) }
@@ -147,11 +201,21 @@ struct ContentView: View {
                         TextField("Sunucu URL", text: $model.serverURL)
                             .textInputAutocapitalization(.never).autocorrectionDisabled()
                         Text("Örnek: https://api.ornek.com — HTTP adresleri kabul edilmez.").font(.footnote).foregroundStyle(.secondary)
-                        Button("Adresi kaydet ve bağlan") { model.saveServer(); Task { await model.load(query: searchText, category: selectedCategory) } }
-                        Button("Bağlantıyı test et") { Task { await model.load(query: searchText, category: selectedCategory) } }
+                        Button("Adresi kaydet ve bağlan") { model.saveServer(); Task { await model.testConnection() } }
+                        Button("Bağlantıyı test et") { Task { await model.testConnection() } }
                     }
                     Section("Durum") {
-                        Text("API prototipine bağlanabilir. Sunucunun internet üzerinden erişilebilir olması gerekir.")
+                        if model.connectionTesting {
+                            ProgressView("API sağlık kontrolü…")
+                        }
+                        if let status = model.connectionStatus {
+                            Text(status).font(.footnote)
+                        }
+                        if let error = model.errorMessage {
+                            Text(error).font(.footnote).foregroundStyle(.orange)
+                        }
+                        Text("Bağlantı testi /api/health uç noktasını ve SQLite durumunu kontrol eder.")
+                            .font(.footnote).foregroundStyle(.secondary)
                     }
                     Section("Prototip oturumu") {
                         Button("Demo oturumundan çıkış yap", role: .destructive) { UserDefaults.standard.set(false, forKey: "gozihale_demo_session") }
