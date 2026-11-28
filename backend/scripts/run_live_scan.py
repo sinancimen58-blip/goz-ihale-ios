@@ -26,6 +26,15 @@ def request_json(url,token=None,method="GET",timeout=30):
     with urlopen(request,timeout=timeout) as response:
         return json.loads(response.read().decode("utf-8"))
 
+
+
+def dispatch_if_configured(base,token,status):
+    """Drain the durable Telegram outbox only when server-side credentials exist."""
+    if not status.get("telegram_configured"):
+        outbox=status.get("outbox",{})
+        return {"configured":False,"sent":0,"failed":0,"pending":outbox.get("pending",0),
+                "message":"Telegram credentials are absent; pending alerts are retained."}
+    return request_json(base+"/api/dispatch-alerts",token=token,method="POST")
 def main():
     env=read_env(BACKEND_DIR/".env")
     token=env.get("GOZ_IHALE_API_WRITE_TOKEN")
@@ -58,13 +67,15 @@ def main():
     summary=request_json(base+"/api/scan-summary")
     notices=request_json(base+"/api/priority-notices?limit=200")
     notification_status=request_json(base+"/api/notification-status")
+    dispatch_result=dispatch_if_configured(base,token,notification_status)
     if not isinstance(notices,list):
         print("Priority notices endpoint returned an unexpected payload.",file=sys.stderr)
         return 2
     outbox=notification_status.get("outbox",{})
     print(f"Scan ledger: {summary.get('sources_with_runs',0)} sources with runs; {summary.get('latest_status_counts',{})}")
     print(f"Priority notices API: {len(notices)} records returned")
-    print(f"Telegram configured: {bool(notification_status.get('telegram_configured'))}; outbox: {outbox}")
+    print(f"Telegram configured: {bool(notification_status.get('telegram_configured'))}; outbox before dispatch: {outbox}")
+    print(f"Telegram dispatch: configured={dispatch_result.get('configured')}; sent={dispatch_result.get('sent',0)}; failed={dispatch_result.get('failed',0)}; pending={dispatch_result.get('pending',0)}")
     return 0
 
 if __name__=="__main__":
