@@ -4,9 +4,8 @@ on:
   push:
     branches: [main]
     paths:
-      - "backend/app/collector/official_html_adapter.py"
-      - "backend/app/collector/filtering.py"
-      - "backend/app/collector/keywords.py"
+      - "backend/app/collector/**"
+      - "backend/requirements.txt"
       - ".github/workflows/official-source-smoke.yml"
   workflow_dispatch:
   schedule:
