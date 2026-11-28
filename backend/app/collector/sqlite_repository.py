@@ -39,8 +39,11 @@ def initialize():
         db.execute("""CREATE TABLE IF NOT EXISTS alert_outbox (
             alert_key TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, payload_json TEXT NOT NULL,
             priority TEXT NOT NULL, reason TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending',
-            attempts INTEGER NOT NULL DEFAULT 0, last_error TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-            sent_at TEXT)""")
+            attempts INTEGER NOT NULL DEFAULT 0, last_error TEXT, next_attempt_at TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP, sent_at TEXT)""")
+        existing_alert_columns={row[1] for row in db.execute("PRAGMA table_info(alert_outbox)").fetchall()}
+        if "next_attempt_at" not in existing_alert_columns:
+            db.execute("ALTER TABLE alert_outbox ADD COLUMN next_attempt_at TEXT")
 
 def ingest(record: dict[str, Any]) -> dict[str, Any]:
     initialize()
@@ -168,7 +171,7 @@ def source_disagreements(fingerprint: str):
 def list_pending_alerts(limit: int = 100):
     initialize()
     with connection() as db:
-        rows=db.execute("SELECT alert_key,fingerprint,payload_json,priority,reason,attempts FROM alert_outbox WHERE status='pending' AND attempts<8 ORDER BY created_at,alert_key LIMIT ?",(max(1,min(limit,500)),)).fetchall()
+        rows=db.execute("SELECT alert_key,fingerprint,payload_json,priority,reason,attempts,next_attempt_at FROM alert_outbox WHERE status='pending' AND attempts<8 AND (next_attempt_at IS NULL OR next_attempt_at<=CURRENT_TIMESTAMP) ORDER BY created_at,alert_key LIMIT ?",(max(1,min(limit,500)),)).fetchall()
     result=[]
     for row in rows:
         item=dict(row)
@@ -179,14 +182,23 @@ def list_pending_alerts(limit: int = 100):
         result.append(item)
     return result
 
+def retry_delay_seconds(attempts: int) -> int:
+    """Bounded exponential delay: 1 minute initially, capped at 1 hour."""
+    return min(3600, 60 * (2 ** max(0, int(attempts))))
+
 def mark_alert_delivery(alert_key: str, success: bool, error: str | None = None):
     initialize()
     safe_error=(str(error or "Delivery failed")[:300] if not success else None)
     with connection() as db:
         if success:
-            db.execute("UPDATE alert_outbox SET status='sent',attempts=attempts+1,last_error=NULL,sent_at=CURRENT_TIMESTAMP WHERE alert_key=? AND status='pending'",(alert_key,))
+            db.execute("UPDATE alert_outbox SET status='sent',attempts=attempts+1,last_error=NULL,next_attempt_at=NULL,sent_at=CURRENT_TIMESTAMP WHERE alert_key=? AND status='pending'",(alert_key,))
         else:
-            db.execute("UPDATE alert_outbox SET attempts=attempts+1,last_error=?,status=CASE WHEN attempts+1>=8 THEN 'failed' ELSE 'pending' END WHERE alert_key=? AND status='pending'",(safe_error,alert_key))
+            row=db.execute("SELECT attempts FROM alert_outbox WHERE alert_key=? AND status='pending'",(alert_key,)).fetchone()
+            if row is None:
+                return
+            attempts=int(row["attempts"])
+            delay=retry_delay_seconds(attempts)
+            db.execute("UPDATE alert_outbox SET attempts=attempts+1,last_error=?,next_attempt_at=datetime('now', '+' || ? || ' seconds'),status=CASE WHEN attempts+1>=8 THEN 'failed' ELSE 'pending' END WHERE alert_key=? AND status='pending'",(safe_error,delay,alert_key))
 
 def notification_counts():
     initialize()
