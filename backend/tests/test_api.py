@@ -134,3 +134,20 @@ def test_priority_notices_provides_stable_id_for_ios_model(monkeypatch):
     assert row["id"]=="abc123stable"
     assert all(key in row for key in ("title","institution","category","source_name","status","source_url"))
     assert "days_remaining" in row and "urgency" in row
+
+
+def test_priority_notices_search_and_filters(monkeypatch):
+    samples=[
+        {"fingerprint":"oct-1","title":"OCT cihazı alımı","institution":"Sivas Hastanesi",
+         "city":"Sivas","category":"OCT","status":"new","source_name":"KHGM",
+         "source_url":"https://example.org/1","deadline":None,"summary":"Retina görüntüleme"},
+        {"fingerprint":"fako-2","title":"Fako cihazı alımı","institution":"Kayseri Hastanesi",
+         "city":"Kayseri","category":"Fako","status":"updated","source_name":"DMO",
+         "source_url":"https://example.org/2","deadline":None,"summary":"Cerrahi cihaz"},
+    ]
+    monkeypatch.setattr("app.main.list_collected_notices",lambda limit:samples)
+    assert [r["id"] for r in client.get("/api/priority-notices",params={"q":"retina"}).json()]==["oct-1"]
+    assert [r["id"] for r in client.get("/api/priority-notices",params={"category":"oct"}).json()]==["oct-1"]
+    assert [r["id"] for r in client.get("/api/priority-notices",params={"city":"kayseri"}).json()]==["fako-2"]
+    assert [r["id"] for r in client.get("/api/priority-notices",params={"status":"updated"}).json()]==["fako-2"]
+    assert [r["id"] for r in client.get("/api/priority-notices",params={"source_name":"dmo"}).json()]==["fako-2"]
